@@ -30,8 +30,8 @@ onMounted(async () => {
 
 // Computed properties
 const caratula = computed(() => formsStore.data?.caratula);
-const resumenes = computed(() => formsStore.data?.compras.resumenes || []);
-const detalleCompras = computed(() => formsStore.data?.compras.detalleCompras || []);
+const resumenes = computed((): ResumenCompra[] => formsStore.data?.compras.resumenes || []);
+const detalleCompras = computed((): DetalleCompra[] => formsStore.data?.compras.detalleCompras || []);
 
 // Calculate totals
 const totales = computed(() => {
@@ -58,8 +58,8 @@ const refreshData = async () => {
     <!-- Header -->
     <div class="header">
       <h1>Consultas SII - Libro de Compras</h1>
-      <button 
-        @click="refreshData" 
+      <button
+        @click="refreshData"
         :disabled="formsStore.loading"
         class="refresh-btn"
       >
@@ -415,25 +415,25 @@ h2 {
   .consultas-view {
     padding: 1rem;
   }
-  
+
   .header {
     flex-direction: column;
     gap: 1rem;
     text-align: center;
   }
-  
+
   .caratula-info, .totals-info {
     grid-template-columns: 1fr;
   }
-  
+
   .summary-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .compras-table {
     font-size: 0.8em;
   }
-  
+
   .compras-table th,
   .compras-table td {
     padding: 0.5rem 0.25rem;
