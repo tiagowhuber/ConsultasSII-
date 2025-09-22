@@ -1,9 +1,28 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { onMounted, computed, ref } from 'vue';
 import { useFormsStore } from '@/stores/dte';
 import type { DetalleCompra, ResumenCompra } from '@/types/api';
 
 const formsStore = useFormsStore();
+
+// Filter and sorting state
+const filters = ref({
+  rutProveedor: '',
+  razonSocial: '',
+  tipoDte: '',
+  estado: '',
+  fechaDesde: '',
+  fechaHasta: '',
+  montoMinimo: '',
+  montoMaximo: ''
+});
+
+const sortConfig = ref({
+  field: 'fechaEmision' as keyof DetalleCompra,
+  direction: 'desc' as 'asc' | 'desc'
+});
+
+const showFilters = ref(false);
 
 // Format currency
 const formatCurrency = (amount: number) => {
@@ -38,9 +57,112 @@ onMounted(async () => {
 // Computed properties
 const caratula = computed(() => formsStore.data?.caratula);
 const resumenes = computed((): ResumenCompra[] => formsStore.data?.compras.resumenes || []);
-const detalleCompras = computed((): DetalleCompra[] => formsStore.data?.compras.detalleCompras || []);
 
-// Calculate totals
+// Filtered and sorted detalle compras
+const filteredDetalleCompras = computed((): DetalleCompra[] => {
+  let compras = formsStore.data?.compras.detalleCompras || [];
+
+  // Apply filters
+  if (filters.value.rutProveedor) {
+    compras = compras.filter(compra =>
+      compra.rutProveedor.toLowerCase().includes(filters.value.rutProveedor.toLowerCase())
+    );
+  }
+
+  if (filters.value.razonSocial) {
+    compras = compras.filter(compra =>
+      compra.razonSocial.toLowerCase().includes(filters.value.razonSocial.toLowerCase())
+    );
+  }
+
+  if (filters.value.tipoDte) {
+    compras = compras.filter(compra => compra.tipoDTE.toString() === filters.value.tipoDte);
+  }
+
+  if (filters.value.estado) {
+    compras = compras.filter(compra => compra.estado === filters.value.estado);
+  }
+
+  if (filters.value.fechaDesde) {
+    compras = compras.filter(compra =>
+      new Date(compra.fechaEmision) >= new Date(filters.value.fechaDesde)
+    );
+  }
+
+  if (filters.value.fechaHasta) {
+    compras = compras.filter(compra =>
+      new Date(compra.fechaEmision) <= new Date(filters.value.fechaHasta)
+    );
+  }
+
+  if (filters.value.montoMinimo) {
+    const minimo = parseFloat(filters.value.montoMinimo);
+    compras = compras.filter(compra => compra.montoTotal >= minimo);
+  }
+
+  if (filters.value.montoMaximo) {
+    const maximo = parseFloat(filters.value.montoMaximo);
+    compras = compras.filter(compra => compra.montoTotal <= maximo);
+  }
+
+  // Apply sorting
+  return compras.sort((a, b) => {
+    const aValue = a[sortConfig.value.field];
+    const bValue = b[sortConfig.value.field];
+
+    let comparison = 0;
+    if (aValue != null && bValue != null) {
+      if (aValue > bValue) comparison = 1;
+      if (aValue < bValue) comparison = -1;
+    }
+
+    return sortConfig.value.direction === 'desc' ? -comparison : comparison;
+  });
+});
+
+const detalleCompras = computed((): DetalleCompra[] => filteredDetalleCompras.value);
+
+// Get unique values for filter dropdowns
+const uniqueTiposDte = computed(() => {
+  const compras = formsStore.data?.compras.detalleCompras || [];
+  const tipos = [...new Set(compras.map(c => ({ value: c.tipoDTE.toString(), label: c.tipoDTEString })))];
+  return tipos.sort((a, b) => parseInt(a.value) - parseInt(b.value));
+});
+
+const uniqueEstados = computed(() => {
+  const compras = formsStore.data?.compras.detalleCompras || [];
+  return [...new Set(compras.map(c => c.estado))];
+});
+
+// Utility functions
+const clearFilters = () => {
+  filters.value = {
+    rutProveedor: '',
+    razonSocial: '',
+    tipoDte: '',
+    estado: '',
+    fechaDesde: '',
+    fechaHasta: '',
+    montoMinimo: '',
+    montoMaximo: ''
+  };
+};
+
+const sortBy = (field: keyof DetalleCompra) => {
+  if (sortConfig.value.field === field) {
+    sortConfig.value.direction = sortConfig.value.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortConfig.value.field = field;
+    sortConfig.value.direction = 'asc';
+  }
+};
+
+const getSortIcon = (field: keyof DetalleCompra) => {
+  if (sortConfig.value.field !== field) return '↕️';
+  return sortConfig.value.direction === 'asc' ? '↑' : '↓';
+};
+
+// Calculate totals based on filtered data
 const totales = computed(() => {
   const compras = detalleCompras.value;
   return {
@@ -165,20 +287,136 @@ const refreshData = async () => {
 
       <!-- Detailed Table -->
       <div class="table-section">
-        <h2>Detalle de Compras</h2>
+        <div class="table-header">
+          <h2>Detalle de Compras</h2>
+          <div class="table-controls">
+            <button @click="showFilters = !showFilters" class="filter-toggle-btn">
+              {{ showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros' }}
+            </button>
+            <span class="results-count">{{ detalleCompras.length }} resultados</span>
+          </div>
+        </div>
+
+        <!-- Filters Panel -->
+        <div v-if="showFilters" class="filters-panel">
+          <div class="filters-grid">
+            <div class="filter-group">
+              <label>RUT Proveedor:</label>
+              <input
+                v-model="filters.rutProveedor"
+                type="text"
+                placeholder="Buscar por RUT..."
+                class="filter-input"
+              />
+            </div>
+
+            <div class="filter-group">
+              <label>Razón Social:</label>
+              <input
+                v-model="filters.razonSocial"
+                type="text"
+                placeholder="Buscar por razón social..."
+                class="filter-input"
+              />
+            </div>
+
+            <div class="filter-group">
+              <label>Tipo DTE:</label>
+              <select v-model="filters.tipoDte" class="filter-select">
+                <option value="">Todos los tipos</option>
+                <option v-for="tipo in uniqueTiposDte" :key="tipo.value" :value="tipo.value">
+                  {{ tipo.value }} - {{ tipo.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>Estado:</label>
+              <select v-model="filters.estado" class="filter-select">
+                <option value="">Todos los estados</option>
+                <option v-for="estado in uniqueEstados" :key="estado" :value="estado">
+                  {{ estado }}
+                </option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>Fecha Desde:</label>
+              <input
+                v-model="filters.fechaDesde"
+                type="date"
+                class="filter-input"
+              />
+            </div>
+
+            <div class="filter-group">
+              <label>Fecha Hasta:</label>
+              <input
+                v-model="filters.fechaHasta"
+                type="date"
+                class="filter-input"
+              />
+            </div>
+
+            <div class="filter-group">
+              <label>Monto Mínimo:</label>
+              <input
+                v-model="filters.montoMinimo"
+                type="number"
+                placeholder="0"
+                class="filter-input"
+              />
+            </div>
+
+            <div class="filter-group">
+              <label>Monto Máximo:</label>
+              <input
+                v-model="filters.montoMaximo"
+                type="number"
+                placeholder="Sin límite"
+                class="filter-input"
+              />
+            </div>
+          </div>
+
+          <div class="filter-actions">
+            <button @click="clearFilters" class="clear-filters-btn">
+              Limpiar Filtros
+            </button>
+          </div>
+        </div>
+
         <div class="table-container">
           <table class="compras-table">
             <thead>
               <tr>
-                <th>Tipo DTE</th>
-                <th>RUT Proveedor</th>
-                <th>Razón Social</th>
-                <th>Folio</th>
-                <th>Fecha Emisión</th>
-                <th>Monto Neto</th>
-                <th>IVA</th>
-                <th>Monto Total</th>
-                <th>Estado</th>
+                <th @click="sortBy('tipoDTEString')" class="sortable">
+                  Tipo DTE {{ getSortIcon('tipoDTEString') }}
+                </th>
+                <th @click="sortBy('rutProveedor')" class="sortable">
+                  RUT Proveedor {{ getSortIcon('rutProveedor') }}
+                </th>
+                <th @click="sortBy('razonSocial')" class="sortable">
+                  Razón Social {{ getSortIcon('razonSocial') }}
+                </th>
+                <th @click="sortBy('folio')" class="sortable">
+                  Folio {{ getSortIcon('folio') }}
+                </th>
+                <th @click="sortBy('fechaEmision')" class="sortable">
+                  Fecha Emisión {{ getSortIcon('fechaEmision') }}
+                </th>
+                <th @click="sortBy('montoNeto')" class="sortable">
+                  Monto Neto {{ getSortIcon('montoNeto') }}
+                </th>
+                <th @click="sortBy('montoIvaRecuperable')" class="sortable">
+                  IVA {{ getSortIcon('montoIvaRecuperable') }}
+                </th>
+                <th @click="sortBy('montoTotal')" class="sortable">
+                  Monto Total {{ getSortIcon('montoTotal') }}
+                </th>
+                <th @click="sortBy('estado')" class="sortable">
+                  Estado {{ getSortIcon('estado') }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -353,6 +591,101 @@ const refreshData = async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.filter-toggle-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s ease;
+}
+
+.filter-toggle-btn:hover {
+  background: #5a6268;
+}
+
+.results-count {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.filters-panel {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.filter-input, .filter-select {
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+}
+
+.filter-input:focus, .filter-select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clear-filters-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s ease;
+}
+
+.clear-filters-btn:hover {
+  background: #c82333;
+}
+
 .table-container {
   overflow-x: auto;
   margin-top: 1rem;
@@ -372,6 +705,16 @@ const refreshData = async () => {
   color: #555;
   border-bottom: 2px solid #dee2e6;
   white-space: nowrap;
+}
+
+.compras-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.compras-table th.sortable:hover {
+  background: #e9ecef;
 }
 
 .compras-table td {
@@ -443,6 +786,24 @@ h2 {
 
   .summary-cards {
     grid-template-columns: 1fr;
+  }
+
+  .table-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .table-controls {
+    justify-content: space-between;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    justify-content: center;
   }
 
   .compras-table {
