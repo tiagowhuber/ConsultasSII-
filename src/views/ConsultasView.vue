@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue';
-import { useFormsStore } from '@/stores/forms';
+import { useFormsStore } from '@/stores/dte';
 import type { DetalleCompra, ResumenCompra } from '@/types/api';
 
 const formsStore = useFormsStore();
@@ -22,6 +22,13 @@ const formatDate = (dateString: string) => {
 // Load data on component mount
 onMounted(async () => {
   try {
+    // Try to load some reference data first
+    await Promise.allSettled([
+      formsStore.loadTiposDte(),
+      formsStore.loadProveedores()
+    ]);
+
+    // Load main data
     await formsStore.getAll();
   } catch (error) {
     console.error('Error loading data:', error);
@@ -46,6 +53,14 @@ const totales = computed(() => {
 
 const refreshData = async () => {
   try {
+    // Load reference data if not already loaded
+    if (formsStore.tiposDte.length === 0) {
+      await formsStore.loadTiposDte();
+    }
+    if (formsStore.proveedores.length === 0) {
+      await formsStore.loadProveedores();
+    }
+
     await formsStore.getAll();
   } catch (error) {
     console.error('Error refreshing data:', error);

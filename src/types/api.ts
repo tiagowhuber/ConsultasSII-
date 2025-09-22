@@ -1,3 +1,89 @@
+// Backend model types
+export interface Empresa {
+  rutEmpresa: string;
+  razonSocial?: string;
+  periodos?: Periodo[];
+}
+
+export interface Periodo {
+  periodoId: number;
+  rutEmpresa: string;
+  anio: number;
+  mes: number;
+  empresa?: Empresa;
+  resumenCompras?: ResumenCompras[];
+}
+
+export interface TipoDte {
+  tipoDte: number;
+  descripcion: string;
+}
+
+export interface Proveedor {
+  rutProveedor: string;
+  razonSocial: string;
+}
+
+export interface ResumenCompras {
+  resumenId: number;
+  periodoId: number;
+  tipoDte: number;
+  totalDocumentos: number;
+  montoExento: string;
+  montoNeto: string;
+  montoIvaRecuperable: string;
+  montoIvaNoRecuperable: string;
+  montoTotal: string;
+  estado: 'Confirmada' | 'Pendiente' | 'Rechazada';
+  periodo?: Periodo;
+  tipoDteInfo?: TipoDte;
+}
+
+export interface DetalleCompras {
+  detalleId: number;
+  periodoId: number;
+  tipoDte: number;
+  tipoCompra: string;
+  rutProveedor: string;
+  folio: string;
+  fechaEmision: string;
+  fechaRecepcion: string;
+  acuseRecibo?: string;
+  fechaAcuse?: string;
+  montoExento: string;
+  montoNeto: string;
+  montoIvaRecuperable: string;
+  montoIvaNoRecuperable: string;
+  codigoIvaNoRecuperable?: number;
+  montoTotal: string;
+  montoNetoActivoFijo: string;
+  ivaActivoFijo: string;
+  ivaUsoComun: string;
+  impuestoSinDerechoCredito: string;
+  ivaNoRetenido: string;
+  tabacosPuros?: string;
+  tabacosCigarrillos?: string;
+  tabacosElaborados?: string;
+  nceNdeFacturaCompra: string;
+  valorOtroImpuesto?: string;
+  tasaOtroImpuesto?: string;
+  codigoOtroImpuesto?: number;
+  estado: 'Confirmada' | 'Pendiente' | 'Rechazada';
+  periodo?: Periodo;
+  tipoDteInfo?: TipoDte;
+  proveedor?: Proveedor;
+  otrosImpuestos?: OtrosImpuestos[];
+}
+
+export interface OtrosImpuestos {
+  otroImpuestoId: number;
+  detalleId: number;
+  codigo: number;
+  tasa: string;
+  valor: string;
+}
+
+// Legacy types for compatibility with existing SII API format
 export interface OtroImpuesto {
   valor: string;
   tasa: string;
@@ -65,8 +151,8 @@ export interface Compras {
 }
 
 export interface Ventas {
-  resumenes: any[];
-  detalleVentas: any[];
+  resumenes: unknown[];
+  detalleVentas: unknown[];
 }
 
 export interface FormResponse {
