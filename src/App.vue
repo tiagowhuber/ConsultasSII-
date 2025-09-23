@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// App component with router
 </script>
 
 <template>

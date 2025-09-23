@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { dteApi } from '../services/api'
@@ -84,8 +83,9 @@ export const useFormsStore = defineStore('forms', () => {
       } else {
         throw new Error('No se encontraron períodos para la empresa y fecha especificada')
       }
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.message || 'An error occurred'
+    } catch (err: unknown) {
+      const errorMessage = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+                           (err as { message?: string }).message || 'An error occurred'
       error.value = errorMessage
       throw new Error(errorMessage)
     } finally {
@@ -100,8 +100,9 @@ export const useFormsStore = defineStore('forms', () => {
       const response = await dteApi.getAllEmpresas()
       empresas.value = response.data
       return response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Error loading empresas'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+                   (err as { message?: string }).message || 'Error loading empresas'
       throw err
     } finally {
       loading.value = false
@@ -114,8 +115,9 @@ export const useFormsStore = defineStore('forms', () => {
       const response = await dteApi.getPeriodosByEmpresa(rutEmpresa, anio, mes)
       periodos.value = response.data
       return response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Error loading períodos'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+                   (err as { message?: string }).message || 'Error loading períodos'
       throw err
     } finally {
       loading.value = false
@@ -128,22 +130,24 @@ export const useFormsStore = defineStore('forms', () => {
       const response = await dteApi.getResumenCompras(periodoId)
       resumenCompras.value = response.data
       return response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Error loading resumen de compras'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+                   (err as { message?: string }).message || 'Error loading resumen de compras'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  const loadDetalleCompras = async (periodoId?: string, filters?: any) => {
+  const loadDetalleCompras = async (periodoId?: string, filters?: Record<string, unknown>) => {
     try {
       loading.value = true
       const response = await dteApi.getDetalleCompras(periodoId, filters)
       detalleCompras.value = response.data.data
       return response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Error loading detalle de compras'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+                   (err as { message?: string }).message || 'Error loading detalle de compras'
       throw err
     } finally {
       loading.value = false
@@ -155,8 +159,9 @@ export const useFormsStore = defineStore('forms', () => {
       const response = await dteApi.getAllTiposDte()
       tiposDte.value = response.data
       return response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Error loading tipos DTE'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+                   (err as { message?: string }).message || 'Error loading tipos DTE'
       throw err
     }
   }
@@ -166,8 +171,9 @@ export const useFormsStore = defineStore('forms', () => {
       const response = await dteApi.getAllProveedores(search)
       proveedores.value = response.data
       return response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Error loading proveedores'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+                   (err as { message?: string }).message || 'Error loading proveedores'
       throw err
     }
   }
