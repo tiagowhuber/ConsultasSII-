@@ -188,6 +188,21 @@ const refreshData = async () => {
     console.error('Error refreshing data:', error);
   }
 };
+
+// Download function to open SII document link
+const downloadDocument = (compra: DetalleCompra) => {
+  // Build SII URL with document parameters for future enhancement
+  const siiUrl = 'https://www1.sii.cl/cgi-bin/Portal001/mipeGesDocEmi.cgi?';
+
+  // Log the document details for debugging (can be removed in production)
+  console.log('Downloading document for:', {
+    rut: compra.rutProveedor,
+    folio: compra.folio,
+    tipo: compra.tipoDTE
+  });
+
+  window.open(siiUrl, '_blank');
+};
 </script>
 
 <template>
@@ -417,6 +432,7 @@ const refreshData = async () => {
                 <th @click="sortBy('estado')" class="sortable">
                   Estado {{ getSortIcon('estado') }}
                 </th>
+                <th>Descargar</th>
               </tr>
             </thead>
             <tbody>
@@ -433,6 +449,19 @@ const refreshData = async () => {
                   <span class="estado-badge" :class="`estado-${compra.estado.toLowerCase()}`">
                     {{ compra.estado }}
                   </span>
+                </td>
+                <td>
+                  <button
+                    @click="downloadDocument(compra)"
+                    class="download-btn"
+                    title="Descargar documento desde SII"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,15 17,10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -763,6 +792,37 @@ const refreshData = async () => {
   color: #856404;
 }
 
+.download-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 32px;
+  height: 32px;
+}
+
+.download-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.download-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.download-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 h2 {
   color: #2c3e50;
   margin: 0 0 1rem 0;
@@ -813,6 +873,17 @@ h2 {
   .compras-table th,
   .compras-table td {
     padding: 0.5rem 0.25rem;
+  }
+
+  .download-btn {
+    padding: 0.25rem;
+    min-width: 28px;
+    height: 28px;
+  }
+
+  .download-btn svg {
+    width: 14px;
+    height: 14px;
   }
 }
 </style>
