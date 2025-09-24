@@ -89,6 +89,8 @@ export const dteApi = {
 
   // Tipo DTE endpoints
   getAllTiposDte: () => api.get<TipoDte[]>('/api/dte/tipos-dte'),
-};
 
-export default api;
+  // Comment endpoints
+  updateDetalleCompraComment: (detalleId: number, comentario: string) =>
+    api.put(`/api/dte/detalle-compras/${detalleId}/comment`, { comentario }),
+};export default api;

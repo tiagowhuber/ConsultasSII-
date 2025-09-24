@@ -24,6 +24,10 @@ const sortConfig = ref({
 
 const showFilters = ref(false);
 
+// Comment editing state
+const editingComment = ref<string | null>(null);
+const editingCommentText = ref('');
+
 // Format currency
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('es-CL', {
@@ -202,6 +206,42 @@ const downloadDocument = (compra: DetalleCompra) => {
   });
 
   window.open(siiUrl, '_blank');
+};
+
+// Comment editing functions
+const startEditComment = (compra: DetalleCompra) => {
+  const key = `${compra.rutProveedor}-${compra.folio}`;
+  editingComment.value = key;
+  editingCommentText.value = compra.comentario || '';
+};
+
+const cancelEditComment = () => {
+  editingComment.value = null;
+  editingCommentText.value = '';
+};
+
+const saveComment = async (compra: DetalleCompra) => {
+  if (editingComment.value === null) return;
+
+  try {
+    // Find the detalle ID from backend data
+    const detalleCompraBackend = formsStore.detalleCompras.find(
+      d => d.rutProveedor === compra.rutProveedor &&
+           parseInt(d.folio) === compra.folio
+    );
+
+    if (detalleCompraBackend) {
+      await formsStore.updateComment(detalleCompraBackend.detalleId, editingCommentText.value);
+      // Update local state
+      compra.comentario = editingCommentText.value;
+    }
+
+    editingComment.value = null;
+    editingCommentText.value = '';
+  } catch (error) {
+    console.error('Error updating comment:', error);
+    // You could add a toast notification here
+  }
 };
 </script>
 
@@ -432,6 +472,7 @@ const downloadDocument = (compra: DetalleCompra) => {
                 <th @click="sortBy('estado')" class="sortable">
                   Estado {{ getSortIcon('estado') }}
                 </th>
+                <th>Comentario</th>
                 <th>Descargar</th>
               </tr>
             </thead>
@@ -449,6 +490,28 @@ const downloadDocument = (compra: DetalleCompra) => {
                   <span class="estado-badge" :class="`estado-${compra.estado.toLowerCase()}`">
                     {{ compra.estado }}
                   </span>
+                </td>
+                <td class="comment-cell">
+                  <div class="comment-wrapper">
+                    <input
+                      v-if="editingComment === `${compra.rutProveedor}-${compra.folio}`"
+                      v-model="editingCommentText"
+                      @keyup.enter="saveComment(compra)"
+                      @keyup.escape="cancelEditComment"
+                      @blur="saveComment(compra)"
+                      class="comment-input"
+                      placeholder="Agregar comentario..."
+                      ref="commentInput"
+                    />
+                    <div
+                      v-else
+                      @click="startEditComment(compra)"
+                      class="comment-display"
+                      :class="{ 'empty-comment': !compra.comentario }"
+                    >
+                      {{ compra.comentario || 'Hacer clic para agregar comentario' }}
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <button
@@ -821,6 +884,59 @@ const downloadDocument = (compra: DetalleCompra) => {
 .download-btn svg {
   width: 16px;
   height: 16px;
+}
+
+/* Comment styles */
+.comment-cell {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.comment-wrapper {
+  width: 100%;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #3498db;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  outline: none;
+  background: white;
+}
+
+.comment-input:focus {
+  border-color: #2980b9;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.comment-display {
+  padding: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  min-height: 2.2rem;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.comment-display:hover {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.comment-display.empty-comment {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.comment-display.empty-comment:hover {
+  color: #495057;
 }
 
 h2 {

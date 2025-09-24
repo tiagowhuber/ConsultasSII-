@@ -68,6 +68,7 @@ export interface DetalleCompras {
   valorOtroImpuesto?: string;
   tasaOtroImpuesto?: string;
   codigoOtroImpuesto?: number;
+  comentario?: string;
   estado: 'Confirmada' | 'Pendiente' | 'Rechazada';
   periodo?: Periodo;
   tipoDteInfo?: TipoDte;
@@ -118,6 +119,7 @@ export interface DetalleCompra {
   valorOtroImpuesto: string;
   tasaOtroImpuesto: string;
   codigoOtroImpuesto: number;
+  comentario?: string;
   estado: string;
   fechaAcuse: string | null;
   otrosImpuestos?: OtroImpuesto[];
