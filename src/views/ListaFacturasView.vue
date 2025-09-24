@@ -23,6 +23,22 @@ const sortConfig = ref({
 });
 
 const showFilters = ref(false);
+const showColumnControls = ref(false);
+
+// Column visibility state
+const columnVisibility = ref({
+  tipoDTE: true,
+  rutProveedor: true,
+  razonSocial: true,
+  folio: true,
+  fechaEmision: true,
+  montoNeto: false,// Hidden by default
+  montoIva: false, // Hidden by default
+  montoTotal: true,
+  estado: true,
+  comentario: true,
+  descargar: true
+});
 
 // Comment editing state
 const editingComment = ref<string | null>(null);
@@ -152,6 +168,53 @@ const clearFilters = () => {
   };
 };
 
+// Column visibility functions
+const toggleColumn = (column: keyof typeof columnVisibility.value) => {
+  columnVisibility.value[column] = !columnVisibility.value[column];
+};
+
+if(toggleColumn == undefined){
+  console.log(toggleColumn)
+}
+
+const resetColumns = () => {
+  columnVisibility.value = {
+    tipoDTE: true,
+    rutProveedor: true,
+    razonSocial: true,
+    folio: true,
+    fechaEmision: true,
+    montoNeto: true,
+    montoIva: false,
+    montoTotal: true,
+    estado: true,
+    comentario: false,
+    descargar: true
+  };
+};
+
+const showEssentialColumns = () => {
+  columnVisibility.value = {
+    tipoDTE: true,
+    rutProveedor: false,
+    razonSocial: true,
+    folio: true,
+    fechaEmision: true,
+    montoNeto: false,
+    montoIva: false,
+    montoTotal: true,
+    estado: true,
+    comentario: false,
+    descargar: true
+  };
+};
+
+const showAllColumns = () => {
+  Object.keys(columnVisibility.value).forEach(key => {
+    columnVisibility.value[key as keyof typeof columnVisibility.value] = true;
+  });
+};
+
 const sortBy = (field: keyof DetalleCompra) => {
   if (sortConfig.value.field === field) {
     sortConfig.value.direction = sortConfig.value.direction === 'asc' ? 'desc' : 'asc';
@@ -220,8 +283,14 @@ const cancelEditComment = () => {
   editingCommentText.value = '';
 };
 
-const saveComment = async (compra: DetalleCompra) => {
+const saveComment = async (compra: DetalleCompra, event?: Event) => {
   if (editingComment.value === null) return;
+
+  // Prevent default behavior and stop propagation to avoid page scrolling
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
 
   try {
     // Find the detalle ID from backend data
@@ -345,10 +414,68 @@ const saveComment = async (compra: DetalleCompra) => {
         <div class="table-header">
           <h2>Detalle de Compras</h2>
           <div class="table-controls">
+            <button @click="showColumnControls = !showColumnControls" class="column-toggle-btn">
+              {{ showColumnControls ? 'Opciones de Columnas' : 'Opciones de Columnas' }}
+            </button>
             <button @click="showFilters = !showFilters" class="filter-toggle-btn">
               {{ showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros' }}
             </button>
             <span class="results-count">{{ detalleCompras.length }} resultados</span>
+          </div>
+        </div>
+
+        <!-- Column Controls Panel -->
+        <div v-if="showColumnControls" class="column-controls-panel">
+          <div class="column-presets">
+            <button @click="showEssentialColumns" class="preset-btn essential">Esencial</button>
+            <button @click="resetColumns" class="preset-btn default">Por Defecto</button>
+            <button @click="showAllColumns" class="preset-btn all">Todas</button>
+          </div>
+          <div class="column-toggles">
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.tipoDTE" />
+              <span>Tipo DTE</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.rutProveedor" />
+              <span>RUT Proveedor</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.razonSocial" />
+              <span>Razón Social</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.folio" />
+              <span>Folio</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.fechaEmision" />
+              <span>Fecha Emisión</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.montoNeto" />
+              <span>Monto Neto</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.montoIva" />
+              <span>IVA</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.montoTotal" />
+              <span>Monto Total</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.estado" />
+              <span>Estado</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.comentario" />
+              <span>Comentario</span>
+            </label>
+            <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.descargar" />
+              <span>Descargar</span>
+            </label>
           </div>
         </div>
 
@@ -445,60 +572,60 @@ const saveComment = async (compra: DetalleCompra) => {
           <table class="compras-table">
             <thead>
               <tr>
-                <th @click="sortBy('tipoDTEString')" class="sortable">
+                <th v-if="columnVisibility.tipoDTE" @click="sortBy('tipoDTEString')" class="sortable">
                   Tipo DTE {{ getSortIcon('tipoDTEString') }}
                 </th>
-                <th @click="sortBy('rutProveedor')" class="sortable">
+                <th v-if="columnVisibility.rutProveedor" @click="sortBy('rutProveedor')" class="sortable">
                   RUT Proveedor {{ getSortIcon('rutProveedor') }}
                 </th>
-                <th @click="sortBy('razonSocial')" class="sortable">
+                <th v-if="columnVisibility.razonSocial" @click="sortBy('razonSocial')" class="sortable">
                   Razón Social {{ getSortIcon('razonSocial') }}
                 </th>
-                <th @click="sortBy('folio')" class="sortable">
+                <th v-if="columnVisibility.folio" @click="sortBy('folio')" class="sortable">
                   Folio {{ getSortIcon('folio') }}
                 </th>
-                <th @click="sortBy('fechaEmision')" class="sortable">
+                <th v-if="columnVisibility.fechaEmision" @click="sortBy('fechaEmision')" class="sortable">
                   Fecha Emisión {{ getSortIcon('fechaEmision') }}
                 </th>
-                <th @click="sortBy('montoNeto')" class="sortable">
+                <th v-if="columnVisibility.montoNeto" @click="sortBy('montoNeto')" class="sortable">
                   Monto Neto {{ getSortIcon('montoNeto') }}
                 </th>
-                <th @click="sortBy('montoIvaRecuperable')" class="sortable">
+                <th v-if="columnVisibility.montoIva" @click="sortBy('montoIvaRecuperable')" class="sortable">
                   IVA {{ getSortIcon('montoIvaRecuperable') }}
                 </th>
-                <th @click="sortBy('montoTotal')" class="sortable">
+                <th v-if="columnVisibility.montoTotal" @click="sortBy('montoTotal')" class="sortable">
                   Monto Total {{ getSortIcon('montoTotal') }}
                 </th>
-                <th @click="sortBy('estado')" class="sortable">
+                <th v-if="columnVisibility.estado" @click="sortBy('estado')" class="sortable">
                   Estado {{ getSortIcon('estado') }}
                 </th>
-                <th>Comentario</th>
-                <th>Descargar</th>
+                <th v-if="columnVisibility.comentario">Comentario</th>
+                <th v-if="columnVisibility.descargar">Descargar</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="compra in detalleCompras" :key="`${compra.rutProveedor}-${compra.folio}`">
-                <td>{{ compra.tipoDTEString }}</td>
-                <td>{{ compra.rutProveedor }}</td>
-                <td class="razon-social">{{ compra.razonSocial }}</td>
-                <td>{{ compra.folio.toLocaleString() }}</td>
-                <td>{{ formatDate(compra.fechaEmision) }}</td>
-                <td class="amount">{{ formatCurrency(compra.montoNeto) }}</td>
-                <td class="amount">{{ formatCurrency(compra.montoIvaRecuperable) }}</td>
-                <td class="amount total">{{ formatCurrency(compra.montoTotal) }}</td>
-                <td>
+                <td v-if="columnVisibility.tipoDTE">{{ compra.tipoDTEString }}</td>
+                <td v-if="columnVisibility.rutProveedor">{{ compra.rutProveedor }}</td>
+                <td v-if="columnVisibility.razonSocial" class="razon-social" :title="compra.razonSocial">{{ compra.razonSocial }}</td>
+                <td v-if="columnVisibility.folio">{{ compra.folio.toLocaleString() }}</td>
+                <td v-if="columnVisibility.fechaEmision">{{ formatDate(compra.fechaEmision) }}</td>
+                <td v-if="columnVisibility.montoNeto" class="amount">{{ formatCurrency(compra.montoNeto) }}</td>
+                <td v-if="columnVisibility.montoIva" class="amount">{{ formatCurrency(compra.montoIvaRecuperable) }}</td>
+                <td v-if="columnVisibility.montoTotal" class="amount total">{{ formatCurrency(compra.montoTotal) }}</td>
+                <td v-if="columnVisibility.estado">
                   <span class="estado-badge" :class="`estado-${compra.estado.toLowerCase()}`">
                     {{ compra.estado }}
                   </span>
                 </td>
-                <td class="comment-cell">
+                <td v-if="columnVisibility.comentario" class="comment-cell">
                   <div class="comment-wrapper">
                     <input
                       v-if="editingComment === `${compra.rutProveedor}-${compra.folio}`"
                       v-model="editingCommentText"
-                      @keyup.enter="saveComment(compra)"
+                      @keyup.enter="(event) => saveComment(compra, event)"
                       @keyup.escape="cancelEditComment"
-                      @blur="saveComment(compra)"
+                      @blur="(event) => saveComment(compra, event)"
                       class="comment-input"
                       placeholder="Agregar comentario..."
                       ref="commentInput"
@@ -509,11 +636,11 @@ const saveComment = async (compra: DetalleCompra) => {
                       class="comment-display"
                       :class="{ 'empty-comment': !compra.comentario }"
                     >
-                      {{ compra.comentario || 'Hacer clic para agregar comentario' }}
+                      {{ compra.comentario || 'Click para agregar comentario' }}
                     </div>
                   </div>
                 </td>
-                <td>
+                <td v-if="columnVisibility.descargar">
                   <button
                     @click="downloadDocument(compra)"
                     class="download-btn"
@@ -694,9 +821,10 @@ const saveComment = async (compra: DetalleCompra) => {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.filter-toggle-btn {
+.column-toggle-btn, .filter-toggle-btn {
   background: #6c757d;
   color: white;
   border: none;
@@ -707,7 +835,7 @@ const saveComment = async (compra: DetalleCompra) => {
   transition: background 0.3s ease;
 }
 
-.filter-toggle-btn:hover {
+.column-toggle-btn:hover, .filter-toggle-btn:hover {
   background: #5a6268;
 }
 
@@ -715,6 +843,88 @@ const saveComment = async (compra: DetalleCompra) => {
   font-size: 0.9rem;
   color: #666;
   font-weight: 500;
+}
+
+/* Column Controls Panel */
+.column-controls-panel {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.column-presets {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.preset-btn.essential {
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.preset-btn.essential:hover {
+  background: #28a745;
+  color: white;
+}
+
+.preset-btn.default {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.preset-btn.default:hover {
+  background: #007bff;
+  color: white;
+}
+
+.preset-btn.all {
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.preset-btn.all:hover {
+  background: #6c757d;
+  color: white;
+}
+
+.column-toggles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.column-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.column-toggle:hover {
+  background-color: #e9ecef;
+}
+
+.column-toggle input[type="checkbox"] {
+  margin: 0;
+  transform: scale(1.1);
 }
 
 .filters-panel {
@@ -781,22 +991,29 @@ const saveComment = async (compra: DetalleCompra) => {
 .table-container {
   overflow-x: auto;
   margin-top: 1rem;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  background: white;
 }
 
 .compras-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9em;
+  font-size: 0.85rem;
+  min-width: fit-content;
 }
 
 .compras-table th {
   background: #f8f9fa;
-  padding: 1rem 0.75rem;
+  padding: 0.75rem 0.5rem;
   text-align: left;
   font-weight: 600;
   color: #555;
   border-bottom: 2px solid #dee2e6;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .compras-table th.sortable {
@@ -810,26 +1027,106 @@ const saveComment = async (compra: DetalleCompra) => {
 }
 
 .compras-table td {
-  padding: 0.75rem;
+  padding: 0.5rem;
   border-bottom: 1px solid #eee;
   vertical-align: middle;
-}
-
-.compras-table tr:hover {
-  background: #f8f9fa;
-}
-
-.razon-social {
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.amount {
+.compras-table tr:hover {
+  background: #f8f9fa;
+}
+
+/* Optimized column widths */
+.compras-table th:nth-child(1),
+.compras-table td:nth-child(1) { /* Tipo DTE */
+  width: 100px;
+  min-width: 80px;
+}
+
+.compras-table th:nth-child(2),
+.compras-table td:nth-child(2) { /* RUT Proveedor */
+  width: 110px;
+  min-width: 100px;
+}
+
+.compras-table th:nth-child(3),
+.compras-table td:nth-child(3) { /* Razón Social */
+  width: 200px;
+  min-width: 150px;
+  max-width: 250px;
+}
+
+.compras-table th:nth-child(4),
+.compras-table td:nth-child(4) { /* Folio */
+  width: 120px;
+  min-width: 60px;
+  text-align: left;
+}
+
+.compras-table th:nth-child(5),
+.compras-table td:nth-child(5) { /* Fecha */
+  width: 100px;
+  min-width: 90px;
+}
+
+.compras-table th:nth-child(6),
+.compras-table td:nth-child(6) { /* Monto Neto */
+  width: 110px;
+  min-width: 100px;
+  text-align: left;
+}
+
+.compras-table th:nth-child(7),
+.compras-table td:nth-child(7) { /* IVA */
+  width: 100px;
+  min-width: 90px;
   text-align: right;
+}
+
+.compras-table th:nth-child(8),
+.compras-table td:nth-child(8) { /* Monto Total */
+  width: 120px;
+  min-width: 110px;
+  text-align: right;
+}
+
+.compras-table th:nth-child(9),
+.compras-table td:nth-child(9) { /* Estado */
+  width: 90px;
+  min-width: 80px;
+}
+
+.compras-table th:nth-child(10),
+.compras-table td:nth-child(10) { /* Comentario */
+  width: 200px;
+  min-width: 150px;
+  max-width: 300px;
+}
+
+.compras-table th:nth-child(11),
+.compras-table td:nth-child(11) { /* Descargar */
+  width: 60px;
+  min-width: 50px;
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+}
+
+.razon-social {
+  max-width: 250px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.amount {
+  text-align: right !important;
   font-family: 'Courier New', monospace;
   font-weight: 500;
+  font-size: 0.85em;
 }
 
 .amount.total {
@@ -838,11 +1135,13 @@ const saveComment = async (compra: DetalleCompra) => {
 }
 
 .estado-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75em;
   font-weight: 600;
   text-transform: uppercase;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .estado-confirmada {
@@ -859,15 +1158,16 @@ const saveComment = async (compra: DetalleCompra) => {
   background: #28a745;
   color: white;
   border: none;
-  padding: 0.5rem;
-  border-radius: 6px;
+  padding: 0.3rem;
+  border-radius: 4px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  min-width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto;
 }
 
 .download-btn:hover {
@@ -882,8 +1182,8 @@ const saveComment = async (compra: DetalleCompra) => {
 }
 
 .download-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 /* Comment styles */
@@ -972,6 +1272,17 @@ h2 {
 
   .table-controls {
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .column-presets {
+    justify-content: center;
+  }
+
+  .column-toggles {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 
   .filters-grid {
@@ -982,24 +1293,106 @@ h2 {
     justify-content: center;
   }
 
+  /* Mobile table optimization */
+  .table-container {
+    border-radius: 4px;
+  }
+
   .compras-table {
-    font-size: 0.8em;
+    font-size: 0.75rem;
   }
 
   .compras-table th,
   .compras-table td {
-    padding: 0.5rem 0.25rem;
+    padding: 0.4rem 0.3rem;
+  }
+
+  /* Ensure essential columns are visible on mobile */
+  .compras-table th:nth-child(1),
+  .compras-table td:nth-child(1) { /* Tipo DTE */
+    width: 70px;
+    min-width: 60px;
+  }
+
+  .compras-table th:nth-child(2),
+  .compras-table td:nth-child(2) { /* RUT Proveedor */
+    width: 90px;
+    min-width: 80px;
+  }
+
+  .compras-table th:nth-child(3),
+  .compras-table td:nth-child(3) { /* Razón Social */
+    width: 120px;
+    min-width: 100px;
+    max-width: 150px;
+  }
+
+  .compras-table th:nth-child(4),
+  .compras-table td:nth-child(4) { /* Folio */
+    width: 70px;
+    min-width: 50px;
+    text-align: left;
+  }
+  .compras-table th:nth-child(5),
+  .compras-table td:nth-child(5) { /* Fecha */
+    width: 80px;
+    min-width: 70px;
+  }
+
+  .compras-table th:nth-child(8),
+  .compras-table td:nth-child(8) { /* Monto Total */
+    width: 90px;
+    min-width: 80px;
   }
 
   .download-btn {
-    padding: 0.25rem;
-    min-width: 28px;
-    height: 28px;
+    padding: 0.2rem;
+    min-width: 24px;
+    height: 24px;
   }
 
   .download-btn svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
+  }
+
+  .estado-badge {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.7em;
+  }
+
+  /* Hide less critical columns by default on mobile */
+  .column-visibility-mobile {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .consultas-view {
+    padding: 0.5rem;
+  }
+
+  .column-toggles {
+    grid-template-columns: 1fr;
+  }
+
+  .table-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .column-presets {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .compras-table {
+    font-size: 0.7rem;
+  }
+
+  .compras-table th,
+  .compras-table td {
+    padding: 0.3rem 0.2rem;
   }
 }
 </style>
