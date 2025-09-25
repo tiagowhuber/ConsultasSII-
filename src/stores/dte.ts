@@ -178,70 +178,6 @@ export const useFormsStore = defineStore('forms', () => {
     }
   }
 
-  const updateComment = async (detalleId: number, comentario: string) => {
-    try {
-      loading.value = true
-      const response = await dteApi.updateDetalleCompraComment(detalleId, comentario)
-
-      // Update the comment in the local state
-      const index = detalleCompras.value.findIndex(d => d.detalleId === detalleId)
-      if (index !== -1) {
-        detalleCompras.value[index].comentario = comentario
-      }
-
-      // Also update in the transformed data if it exists
-      if (data.value?.compras?.detalleCompras) {
-        const transformedIndex = data.value.compras.detalleCompras.findIndex(
-          d => d.folio === parseInt(detalleCompras.value[index]?.folio || '0') &&
-               d.rutProveedor === detalleCompras.value[index]?.rutProveedor
-        )
-        if (transformedIndex !== -1) {
-          data.value.compras.detalleCompras[transformedIndex].comentario = comentario
-        }
-      }
-
-      return response.data
-    } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error updating comment'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const updateContabilizado = async (detalleId: number, contabilizado: boolean) => {
-    try {
-      loading.value = true
-      const response = await dteApi.updateDetalleCompraContabilizado(detalleId, contabilizado)
-
-      // Update the contabilizado status in the local state
-      const index = detalleCompras.value.findIndex(d => d.detalleId === detalleId)
-      if (index !== -1) {
-        detalleCompras.value[index].contabilizado = contabilizado
-      }
-
-      // Also update in the transformed data if it exists
-      if (data.value?.compras?.detalleCompras) {
-        const transformedIndex = data.value.compras.detalleCompras.findIndex(
-          d => d.folio === parseInt(detalleCompras.value[index]?.folio || '0') &&
-               d.rutProveedor === detalleCompras.value[index]?.rutProveedor
-        )
-        if (transformedIndex !== -1) {
-          data.value.compras.detalleCompras[transformedIndex].contabilizado = contabilizado
-        }
-      }
-
-      return response.data
-    } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error updating contabilizado status'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
   // Helper functions
   const getMonthName = (monthNumber: number): string => {
     const months = [
@@ -295,8 +231,8 @@ export const useFormsStore = defineStore('forms', () => {
       valorOtroImpuesto: detalle.valorOtroImpuesto || '',
       tasaOtroImpuesto: detalle.tasaOtroImpuesto || '',
       codigoOtroImpuesto: detalle.codigoOtroImpuesto || 0,
-      comentario: detalle.comentario || undefined,
-      contabilizado: detalle.contabilizado || false,
+      comentario: detalle.nota?.comentario || undefined,
+      contabilizado: detalle.nota?.contabilizado || false,
       estado: detalle.estado,
       fechaAcuse: detalle.fechaAcuse || null,
       otrosImpuestos: detalle.otrosImpuestos?.map(oi => ({
@@ -332,8 +268,6 @@ export const useFormsStore = defineStore('forms', () => {
     loadResumenCompras,
     loadDetalleCompras,
     loadTiposDte,
-    loadProveedores,
-    updateComment,
-    updateContabilizado
+    loadProveedores
   }
 })

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue';
 import { useFormsStore } from '@/stores/dte';
+import { useNotasStore } from '@/stores/notas';
 import type { DetalleCompra, ResumenCompra } from '@/types/api';
 
 const formsStore = useFormsStore();
+const notasStore = useNotasStore();
 
 // Filter and sorting state
 const filters = ref({
@@ -289,24 +291,21 @@ const cancelEditComment = () => {
 // Toggle contabilizado status
 const toggleContabilizado = async (compra: DetalleCompra) => {
   try {
-    // Find the detalle ID from backend data
-    const detalleCompraBackend = formsStore.detalleCompras.find(
-      d => d.rutProveedor === compra.rutProveedor &&
-           parseInt(d.folio) === compra.folio
+    const currentStatus = compra.contabilizado || false;
+    const newContabilizadoStatus = !currentStatus;
+
+    // Call the notas store method with composite key
+    await notasStore.updateContabilizado(
+      compra.rutProveedor,
+      compra.folio.toString(),
+      compra.tipoDTE,
+      newContabilizadoStatus
     );
 
-    if (detalleCompraBackend) {
-      const currentStatus = compra.contabilizado || false;
-      const newContabilizadoStatus = !currentStatus;
+    // Update local state
+    compra.contabilizado = newContabilizadoStatus;
 
-      // Call the store method to update the backend
-      await formsStore.updateContabilizado(detalleCompraBackend.detalleId, newContabilizadoStatus);
-
-      // Update local state
-      compra.contabilizado = newContabilizadoStatus;
-
-      console.log(`Contabilizado status updated for ${compra.rutProveedor}-${compra.folio}: ${newContabilizadoStatus}`);
-    }
+    console.log(`Contabilizado status updated for ${compra.rutProveedor}-${compra.folio}: ${newContabilizadoStatus}`);
   } catch (error) {
     console.error('Error updating contabilizado status:', error);
     // You could add a toast notification here
@@ -321,17 +320,16 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
   }
 
   try {
-    // Find the detalle ID from backend data
-    const detalleCompraBackend = formsStore.detalleCompras.find(
-      d => d.rutProveedor === compra.rutProveedor &&
-           parseInt(d.folio) === compra.folio
+    // Call the notas store method with composite key
+    await notasStore.updateComment(
+      compra.rutProveedor,
+      compra.folio.toString(),
+      compra.tipoDTE,
+      editingCommentText.value
     );
 
-    if (detalleCompraBackend) {
-      await formsStore.updateComment(detalleCompraBackend.detalleId, editingCommentText.value);
-      // Update local state
-      compra.comentario = editingCommentText.value;
-    }
+    // Update local state
+    compra.comentario = editingCommentText.value;
 
     editingComment.value = null;
     editingCommentText.value = '';

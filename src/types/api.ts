@@ -68,13 +68,12 @@ export interface DetalleCompras {
   valorOtroImpuesto?: string;
   tasaOtroImpuesto?: string;
   codigoOtroImpuesto?: number;
-  comentario?: string;
-  contabilizado?: boolean;
   estado: 'Confirmada' | 'Pendiente' | 'Rechazada';
   periodo?: Periodo;
   tipoDteInfo?: TipoDte;
   proveedor?: Proveedor;
   otrosImpuestos?: OtrosImpuestos[];
+  nota?: Notas;
 }
 
 export interface OtrosImpuestos {
@@ -83,6 +82,18 @@ export interface OtrosImpuestos {
   codigo: number;
   tasa: string;
   valor: string;
+}
+
+export interface Notas {
+  notaId: number;
+  rutProveedor: string;
+  folio: string;
+  tipoDte: number;
+  comentario?: string;
+  contabilizado: boolean;
+  createdAt: string;
+  updatedAt: string;
+  detalleCompra?: DetalleCompras;
 }
 
 // Legacy types for compatibility with existing SII API format

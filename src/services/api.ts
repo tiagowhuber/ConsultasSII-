@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Empresa, Periodo, ResumenCompras, DetalleCompras, Proveedor, TipoDte } from '../types/api';
+import type { Empresa, Periodo, ResumenCompras, DetalleCompras, Proveedor, TipoDte, Notas } from '../types/api';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
@@ -89,12 +89,41 @@ export const dteApi = {
 
   // Tipo DTE endpoints
   getAllTiposDte: () => api.get<TipoDte[]>('/api/dte/tipos-dte'),
+};
 
-  // Comment endpoints
-  updateDetalleCompraComment: (detalleId: number, comentario: string) =>
-    api.put(`/api/dte/detalle-compras/${detalleId}/comment`, { comentario }),
+// Notas API methods
+export const notasApi = {
+  // Get all notas
+  getAllNotas: () => api.get<Notas[]>('/api/notas'),
 
-  // Contabilizado endpoints
-  updateDetalleCompraContabilizado: (detalleId: number, contabilizado: boolean) =>
-    api.put(`/api/dte/detalle-compras/${detalleId}/contabilizado`, { contabilizado }),
+  // Get nota by composite key
+  getNotaByCompositeKey: (rutProveedor: string, folio: string, tipoDte: number) =>
+    api.get<Notas>(`/api/notas/${rutProveedor}/${folio}/${tipoDte}`),
+
+  // Create nota
+  createNota: (data: {
+    rutProveedor: string;
+    folio: string;
+    tipoDte: number;
+    comentario?: string;
+    contabilizado?: boolean;
+  }) => api.post<Notas>('/api/notas', data),
+
+  // Update nota
+  updateNota: (rutProveedor: string, folio: string, tipoDte: number, data: {
+    comentario?: string;
+    contabilizado?: boolean;
+  }) => api.put<Notas>(`/api/notas/${rutProveedor}/${folio}/${tipoDte}`, data),
+
+  // Update nota comment
+  updateNotaComment: (rutProveedor: string, folio: string, tipoDte: number, comentario: string) =>
+    api.put(`/api/notas/${rutProveedor}/${folio}/${tipoDte}/comment`, { comentario }),
+
+  // Update nota contabilizado status
+  updateNotaContabilizado: (rutProveedor: string, folio: string, tipoDte: number, contabilizado: boolean) =>
+    api.put(`/api/notas/${rutProveedor}/${folio}/${tipoDte}/contabilizado`, { contabilizado }),
+
+  // Delete nota
+  deleteNota: (rutProveedor: string, folio: string, tipoDte: number) =>
+    api.delete(`/api/notas/${rutProveedor}/${folio}/${tipoDte}`),
 };export default api;
