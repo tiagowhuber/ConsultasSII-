@@ -93,4 +93,8 @@ export const dteApi = {
   // Comment endpoints
   updateDetalleCompraComment: (detalleId: number, comentario: string) =>
     api.put(`/api/dte/detalle-compras/${detalleId}/comment`, { comentario }),
+
+  // Contabilizado endpoints
+  updateDetalleCompraContabilizado: (detalleId: number, contabilizado: boolean) =>
+    api.put(`/api/dte/detalle-compras/${detalleId}/contabilizado`, { contabilizado }),
 };export default api;

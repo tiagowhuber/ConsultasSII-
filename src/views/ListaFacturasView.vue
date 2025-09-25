@@ -36,6 +36,7 @@ const columnVisibility = ref({
   montoIva: false, // Hidden by default
   montoTotal: true,
   estado: true,
+  contabilizado: true,
   comentario: true,
   descargar: true
 });
@@ -188,6 +189,7 @@ const resetColumns = () => {
     montoIva: false,
     montoTotal: true,
     estado: true,
+    contabilizado: true,
     comentario: false,
     descargar: true
   };
@@ -204,6 +206,7 @@ const showEssentialColumns = () => {
     montoIva: false,
     montoTotal: true,
     estado: true,
+    contabilizado: true,
     comentario: false,
     descargar: true
   };
@@ -283,7 +286,32 @@ const cancelEditComment = () => {
   editingCommentText.value = '';
 };
 
-const saveComment = async (compra: DetalleCompra, event?: Event) => {
+// Toggle contabilizado status
+const toggleContabilizado = async (compra: DetalleCompra) => {
+  try {
+    // Find the detalle ID from backend data
+    const detalleCompraBackend = formsStore.detalleCompras.find(
+      d => d.rutProveedor === compra.rutProveedor &&
+           parseInt(d.folio) === compra.folio
+    );
+
+    if (detalleCompraBackend) {
+      const currentStatus = compra.contabilizado || false;
+      const newContabilizadoStatus = !currentStatus;
+
+      // Call the store method to update the backend
+      await formsStore.updateContabilizado(detalleCompraBackend.detalleId, newContabilizadoStatus);
+
+      // Update local state
+      compra.contabilizado = newContabilizadoStatus;
+
+      console.log(`Contabilizado status updated for ${compra.rutProveedor}-${compra.folio}: ${newContabilizadoStatus}`);
+    }
+  } catch (error) {
+    console.error('Error updating contabilizado status:', error);
+    // You could add a toast notification here
+  }
+};const saveComment = async (compra: DetalleCompra, event?: Event) => {
   if (editingComment.value === null) return;
 
   // Prevent default behavior and stop propagation to avoid page scrolling
@@ -469,6 +497,10 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
               <span>Estado</span>
             </label>
             <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.contabilizado" />
+              <span>Contabilizado</span>
+            </label>
+            <label class="column-toggle">
               <input type="checkbox" v-model="columnVisibility.comentario" />
               <span>Comentario</span>
             </label>
@@ -599,6 +631,7 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
                 <th v-if="columnVisibility.estado" @click="sortBy('estado')" class="sortable">
                   Estado {{ getSortIcon('estado') }}
                 </th>
+                <th v-if="columnVisibility.contabilizado">Contabilizado</th>
                 <th v-if="columnVisibility.comentario">Comentario</th>
                 <th v-if="columnVisibility.descargar">Descargar</th>
               </tr>
@@ -617,6 +650,17 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
                   <span class="estado-badge" :class="`estado-${compra.estado.toLowerCase()}`">
                     {{ compra.estado }}
                   </span>
+                </td>
+                <td v-if="columnVisibility.contabilizado" class="contabilizado-cell">
+                  <label class="checkbox-wrapper">
+                    <input
+                      type="checkbox"
+                      :checked="compra.contabilizado || false"
+                      @change="toggleContabilizado(compra)"
+                      class="contabilizado-checkbox"
+                    />
+                    <span class="checkmark"></span>
+                  </label>
                 </td>
                 <td v-if="columnVisibility.comentario" class="comment-cell">
                   <div class="comment-wrapper">
@@ -1101,14 +1145,21 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
 }
 
 .compras-table th:nth-child(10),
-.compras-table td:nth-child(10) { /* Comentario */
+.compras-table td:nth-child(10) { /* Contabilizado */
+  width: 90px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.compras-table th:nth-child(11),
+.compras-table td:nth-child(11) { /* Comentario */
   width: 200px;
   min-width: 150px;
   max-width: 300px;
 }
 
-.compras-table th:nth-child(11),
-.compras-table td:nth-child(11) { /* Descargar */
+.compras-table th:nth-child(12),
+.compras-table td:nth-child(12) { /* Descargar */
   width: 60px;
   min-width: 50px;
   text-align: center;
@@ -1190,6 +1241,41 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
 .comment-cell {
   min-width: 200px;
   max-width: 300px;
+}
+
+/* Contabilizado checkbox styles */
+.contabilizado-cell {
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+}
+
+.checkbox-wrapper {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.contabilizado-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #28a745;
+  transform: scale(1.2);
+}
+
+.contabilizado-checkbox:checked {
+  background-color: #28a745;
+}
+
+.contabilizado-checkbox:hover {
+  transform: scale(1.3);
+  transition: transform 0.2s ease;
+}
+
+.checkmark {
+  display: none; /* Hide custom checkmark for now, use native checkbox */
 }
 
 .comment-wrapper {

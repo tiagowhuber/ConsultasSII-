@@ -69,6 +69,7 @@ export interface DetalleCompras {
   tasaOtroImpuesto?: string;
   codigoOtroImpuesto?: number;
   comentario?: string;
+  contabilizado?: boolean;
   estado: 'Confirmada' | 'Pendiente' | 'Rechazada';
   periodo?: Periodo;
   tipoDteInfo?: TipoDte;
@@ -123,6 +124,7 @@ export interface DetalleCompra {
   estado: string;
   fechaAcuse: string | null;
   otrosImpuestos?: OtroImpuesto[];
+  contabilizado?: boolean;
 }
 
 export interface ResumenCompra {
