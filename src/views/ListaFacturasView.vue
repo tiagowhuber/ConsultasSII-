@@ -608,7 +608,7 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
                 <td v-if="columnVisibility.tipoDTE">{{ compra.tipoDTEString }}</td>
                 <td v-if="columnVisibility.rutProveedor">{{ compra.rutProveedor }}</td>
                 <td v-if="columnVisibility.razonSocial" class="razon-social" :title="compra.razonSocial">{{ compra.razonSocial }}</td>
-                <td v-if="columnVisibility.folio">{{ compra.folio.toLocaleString() }}</td>
+                <td v-if="columnVisibility.folio">{{ compra.folio }}</td>
                 <td v-if="columnVisibility.fechaEmision">{{ formatDate(compra.fechaEmision) }}</td>
                 <td v-if="columnVisibility.montoNeto" class="amount">{{ formatCurrency(compra.montoNeto) }}</td>
                 <td v-if="columnVisibility.montoIva" class="amount">{{ formatCurrency(compra.montoIvaRecuperable) }}</td>
