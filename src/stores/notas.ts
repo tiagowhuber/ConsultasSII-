@@ -12,78 +12,65 @@ export const useNotasStore = defineStore('notas', () => {
   const notasMap = computed(() => {
     const map = new Map<string, Notas>()
     notas.value.forEach(nota => {
-      const key = `${nota.rutProveedor}-${nota.folio}-${nota.tipoDte}`
-      map.set(key, nota)
+      map.set(nota.folio, nota)
     })
     return map
   })
 
-  // Helper function to generate composite key
-  const getCompositeKey = (rutProveedor: string, folio: string, tipoDte: number): string => {
-    return `${rutProveedor}-${folio}-${tipoDte}`
+  // Get nota by folio
+  const getNotaByFolio = (folio: string): Notas | undefined => {
+    return notasMap.value.get(folio)
   }
 
-  // Get nota by composite key
-  const getNotaByCompositeKey = (rutProveedor: string, folio: string, tipoDte: number): Notas | undefined => {
-    const key = getCompositeKey(rutProveedor, folio, tipoDte)
-    return notasMap.value.get(key)
-  }
-
-  // Load all notas
-  const loadAllNotas = async () => {
+  // Actions
+  const loadAllNotas = async (): Promise<void> => {
+    loading.value = true
+    error.value = null
     try {
-      loading.value = true
-      error.value = null
       const response = await notasApi.getAllNotas()
       notas.value = response.data
-      return response.data
     } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error loading notas'
-      throw err
+      console.error('Error loading notas:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error loading notas'
     } finally {
       loading.value = false
     }
   }
 
-  // Load specific nota by composite key
-  const loadNotaByCompositeKey = async (rutProveedor: string, folio: string, tipoDte: number) => {
+  // Load nota by folio
+  const loadNotaByFolio = async (folio: string): Promise<Notas | null> => {
+    loading.value = true
+    error.value = null
     try {
-      const response = await notasApi.getNotaByCompositeKey(rutProveedor, folio, tipoDte)
-      const nota = response.data
+      const response = await notasApi.getNotaByFolio(folio)
 
-      // Update local state
-      const existingIndex = notas.value.findIndex(n =>
-        n.rutProveedor === rutProveedor &&
-        n.folio === folio &&
-        n.tipoDte === tipoDte
-      )
-
-      if (existingIndex !== -1) {
-        notas.value[existingIndex] = nota
+      // Update or add to local store
+      const existingIndex = notas.value.findIndex(n => n.folio === folio)
+      if (existingIndex >= 0) {
+        notas.value[existingIndex] = response.data
       } else {
-        notas.value.push(nota)
+        notas.value.push(response.data)
       }
 
-      return nota
+      return response.data
     } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error loading nota'
-      throw err
+      console.error('Error loading nota:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error loading nota'
+      return null
+    } finally {
+      loading.value = false
     }
   }
 
   // Create nota
   const createNota = async (data: {
-    rutProveedor: string
     folio: string
-    tipoDte: number
     comentario?: string
     contabilizado?: boolean
-  }) => {
+  }): Promise<Notas | null> => {
+    loading.value = true
+    error.value = null
     try {
-      loading.value = true
-      error.value = null
       const response = await notasApi.createNota(data)
       const newNota = response.data
 
@@ -92,9 +79,9 @@ export const useNotasStore = defineStore('notas', () => {
 
       return newNota
     } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error creating nota'
-      throw err
+      console.error('Error creating nota:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error creating nota'
+      return null
     } finally {
       loading.value = false
     }
@@ -102,27 +89,20 @@ export const useNotasStore = defineStore('notas', () => {
 
   // Update nota
   const updateNota = async (
-    rutProveedor: string,
     folio: string,
-    tipoDte: number,
     data: {
       comentario?: string
       contabilizado?: boolean
     }
-  ) => {
+  ): Promise<Notas | null> => {
+    loading.value = true
+    error.value = null
     try {
-      loading.value = true
-      error.value = null
-      const response = await notasApi.updateNota(rutProveedor, folio, tipoDte, data)
+      const response = await notasApi.updateNota(folio, data)
       const updatedNota = response.data
 
       // Update local state
-      const index = notas.value.findIndex(n =>
-        n.rutProveedor === rutProveedor &&
-        n.folio === folio &&
-        n.tipoDte === tipoDte
-      )
-
+      const index = notas.value.findIndex(n => n.folio === folio)
       if (index !== -1) {
         notas.value[index] = updatedNota
       } else {
@@ -131,24 +111,23 @@ export const useNotasStore = defineStore('notas', () => {
 
       return updatedNota
     } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error updating nota'
-      throw err
+      console.error('Error updating nota:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error updating nota'
+      return null
     } finally {
       loading.value = false
     }
   }
 
   // Update comment only
-  const updateComment = async (rutProveedor: string, folio: string, tipoDte: number, comentario: string) => {
+  const updateComment = async (folio: string, comentario: string): Promise<Notas | null> => {
+    loading.value = true
+    error.value = null
     try {
-      loading.value = true
-      error.value = null
-      const response = await notasApi.updateNotaComment(rutProveedor, folio, tipoDte, comentario)
+      const response = await notasApi.updateNotaComment(folio, comentario)
 
       // Update local state
-      const nota = getNotaByCompositeKey(rutProveedor, folio, tipoDte)
-
+      const nota = getNotaByFolio(folio)
       if (nota) {
         nota.comentario = comentario
         nota.updatedAt = new Date().toISOString()
@@ -156,9 +135,7 @@ export const useNotasStore = defineStore('notas', () => {
         // Create local representation if it doesn't exist
         const newNota: Notas = {
           notaId: 0, // Will be updated when we fetch from server
-          rutProveedor,
           folio,
-          tipoDte,
           comentario,
           contabilizado: false,
           createdAt: new Date().toISOString(),
@@ -168,7 +145,7 @@ export const useNotasStore = defineStore('notas', () => {
 
         // Try to fetch the actual nota from server to get the real ID
         try {
-          await loadNotaByCompositeKey(rutProveedor, folio, tipoDte)
+          await loadNotaByFolio(folio)
         } catch {
           // If it fails, the local representation is fine for now
         }
@@ -176,24 +153,23 @@ export const useNotasStore = defineStore('notas', () => {
 
       return response.data
     } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error updating comment'
-      throw err
+      console.error('Error updating comment:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error updating comment'
+      return null
     } finally {
       loading.value = false
     }
   }
 
   // Update contabilizado status only
-  const updateContabilizado = async (rutProveedor: string, folio: string, tipoDte: number, contabilizado: boolean) => {
+  const updateContabilizado = async (folio: string, contabilizado: boolean): Promise<Notas | null> => {
+    loading.value = true
+    error.value = null
     try {
-      loading.value = true
-      error.value = null
-      const response = await notasApi.updateNotaContabilizado(rutProveedor, folio, tipoDte, contabilizado)
+      const response = await notasApi.updateNotaContabilizado(folio, contabilizado)
 
       // Update local state
-      const nota = getNotaByCompositeKey(rutProveedor, folio, tipoDte)
-
+      const nota = getNotaByFolio(folio)
       if (nota) {
         nota.contabilizado = contabilizado
         nota.updatedAt = new Date().toISOString()
@@ -201,9 +177,7 @@ export const useNotasStore = defineStore('notas', () => {
         // Create local representation if it doesn't exist
         const newNota: Notas = {
           notaId: 0, // Will be updated when we fetch from server
-          rutProveedor,
           folio,
-          tipoDte,
           comentario: undefined,
           contabilizado,
           createdAt: new Date().toISOString(),
@@ -213,7 +187,7 @@ export const useNotasStore = defineStore('notas', () => {
 
         // Try to fetch the actual nota from server to get the real ID
         try {
-          await loadNotaByCompositeKey(rutProveedor, folio, tipoDte)
+          await loadNotaByFolio(folio)
         } catch {
           // If it fails, the local representation is fine for now
         }
@@ -221,44 +195,39 @@ export const useNotasStore = defineStore('notas', () => {
 
       return response.data
     } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error updating contabilizado status'
-      throw err
+      console.error('Error updating contabilizado status:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error updating contabilizado status'
+      return null
     } finally {
       loading.value = false
     }
   }
 
   // Delete nota
-  const deleteNota = async (rutProveedor: string, folio: string, tipoDte: number) => {
+  const deleteNota = async (folio: string): Promise<boolean> => {
+    loading.value = true
+    error.value = null
     try {
-      loading.value = true
-      error.value = null
-      const response = await notasApi.deleteNota(rutProveedor, folio, tipoDte)
+      await notasApi.deleteNota(folio)
 
       // Remove from local state
-      const index = notas.value.findIndex(n =>
-        n.rutProveedor === rutProveedor &&
-        n.folio === folio &&
-        n.tipoDte === tipoDte
-      )
-
+      const index = notas.value.findIndex(n => n.folio === folio)
       if (index !== -1) {
         notas.value.splice(index, 1)
       }
 
-      return response.data
+      return true
     } catch (err: unknown) {
-      error.value = (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-                   (err as { message?: string }).message || 'Error deleting nota'
-      throw err
+      console.error('Error deleting nota:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error deleting nota'
+      return false
     } finally {
       loading.value = false
     }
   }
 
   // Clear all notas
-  const clearNotas = () => {
+  const clearNotas = (): void => {
     notas.value = []
     error.value = null
   }
@@ -273,12 +242,11 @@ export const useNotasStore = defineStore('notas', () => {
     notasMap,
 
     // Getters
-    getNotaByCompositeKey,
-    getCompositeKey,
+    getNotaByFolio,
 
     // Actions
     loadAllNotas,
-    loadNotaByCompositeKey,
+    loadNotaByFolio,
     createNota,
     updateNota,
     updateComment,

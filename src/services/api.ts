@@ -96,34 +96,31 @@ export const notasApi = {
   // Get all notas
   getAllNotas: () => api.get<Notas[]>('/api/notas'),
 
-  // Get nota by composite key
-  getNotaByCompositeKey: (rutProveedor: string, folio: string, tipoDte: number) =>
-    api.get<Notas>(`/api/notas/${rutProveedor}/${folio}/${tipoDte}`),
+  // Get nota by folio
+  getNotaByFolio: (folio: string) => api.get<Notas>(`/api/notas/${folio}`),
 
   // Create nota
   createNota: (data: {
-    rutProveedor: string;
     folio: string;
-    tipoDte: number;
     comentario?: string;
     contabilizado?: boolean;
   }) => api.post<Notas>('/api/notas', data),
 
   // Update nota
-  updateNota: (rutProveedor: string, folio: string, tipoDte: number, data: {
+  updateNota: (folio: string, data: {
     comentario?: string;
     contabilizado?: boolean;
-  }) => api.put<Notas>(`/api/notas/${rutProveedor}/${folio}/${tipoDte}`, data),
+  }) => api.put<Notas>(`/api/notas/${folio}`, data),
 
   // Update nota comment
-  updateNotaComment: (rutProveedor: string, folio: string, tipoDte: number, comentario: string) =>
-    api.put(`/api/notas/${rutProveedor}/${folio}/${tipoDte}/comment`, { comentario }),
+  updateNotaComment: (folio: string, comentario: string) =>
+    api.put(`/api/notas/${folio}/comment`, { comentario }),
 
   // Update nota contabilizado status
-  updateNotaContabilizado: (rutProveedor: string, folio: string, tipoDte: number, contabilizado: boolean) =>
-    api.put(`/api/notas/${rutProveedor}/${folio}/${tipoDte}/contabilizado`, { contabilizado }),
+  updateNotaContabilizado: (folio: string, contabilizado: boolean) =>
+    api.put(`/api/notas/${folio}/contabilizado`, { contabilizado }),
 
   // Delete nota
-  deleteNota: (rutProveedor: string, folio: string, tipoDte: number) =>
-    api.delete(`/api/notas/${rutProveedor}/${folio}/${tipoDte}`),
+  deleteNota: (folio: string) =>
+    api.delete(`/api/notas/${folio}`),
 };export default api;

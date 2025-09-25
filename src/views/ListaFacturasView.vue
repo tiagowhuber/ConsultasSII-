@@ -294,18 +294,16 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
     const currentStatus = compra.contabilizado || false;
     const newContabilizadoStatus = !currentStatus;
 
-    // Call the notas store method with composite key
+    // Call the notas store method with folio
     await notasStore.updateContabilizado(
-      compra.rutProveedor,
       compra.folio.toString(),
-      compra.tipoDTE,
       newContabilizadoStatus
     );
 
     // Update local state
     compra.contabilizado = newContabilizadoStatus;
 
-    console.log(`Contabilizado status updated for ${compra.rutProveedor}-${compra.folio}: ${newContabilizadoStatus}`);
+    console.log(`Contabilizado status updated for folio ${compra.folio}: ${newContabilizadoStatus}`);
   } catch (error) {
     console.error('Error updating contabilizado status:', error);
     // You could add a toast notification here
@@ -320,11 +318,9 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
   }
 
   try {
-    // Call the notas store method with composite key
+    // Call the notas store method with folio
     await notasStore.updateComment(
-      compra.rutProveedor,
       compra.folio.toString(),
-      compra.tipoDTE,
       editingCommentText.value
     );
 
