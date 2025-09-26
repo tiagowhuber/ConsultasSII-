@@ -34,6 +34,7 @@ const columnVisibility = ref({
   razonSocial: true,
   folio: true,
   fechaEmision: true,
+  fechaRecepcion: true,
   montoNeto: false,// Hidden by default
   montoIva: false, // Hidden by default
   montoTotal: true,
@@ -46,6 +47,9 @@ const columnVisibility = ref({
 // Comment editing state
 const editingComment = ref<string | null>(null);
 const editingCommentText = ref('');
+
+// Table scroll state
+const tableContainer = ref<HTMLElement | null>(null);
 
 // Format currency
 const formatCurrency = (amount: number) => {
@@ -187,6 +191,7 @@ const resetColumns = () => {
     razonSocial: true,
     folio: true,
     fechaEmision: true,
+    fechaRecepcion: true,
     montoNeto: true,
     montoIva: false,
     montoTotal: true,
@@ -204,6 +209,7 @@ const showEssentialColumns = () => {
     razonSocial: true,
     folio: true,
     fechaEmision: true,
+    fechaRecepcion: true,
     montoNeto: false,
     montoIva: false,
     montoTotal: true,
@@ -272,6 +278,31 @@ const onYearChange = async (event: Event) => {
   const target = event.target as HTMLSelectElement;
   formsStore.setYear(target.value);
   await refreshData();
+};
+
+// Table scroll methods
+const handleTableScroll = () => {
+  // Keep this for potential future use
+};
+
+const scrollTableLeft = () => {
+  if (!tableContainer.value) return;
+  tableContainer.value.scrollBy({ left: -200, behavior: 'smooth' });
+};
+
+const scrollTableRight = () => {
+  if (!tableContainer.value) return;
+  tableContainer.value.scrollBy({ left: 200, behavior: 'smooth' });
+};
+
+const scrollTableToStart = () => {
+  if (!tableContainer.value) return;
+  tableContainer.value.scrollTo({ left: 0, behavior: 'smooth' });
+};
+
+const scrollTableToEnd = () => {
+  if (!tableContainer.value) return;
+  tableContainer.value.scrollTo({ left: tableContainer.value.scrollWidth, behavior: 'smooth' });
 };
 
 // Download function to open SII document link
@@ -528,6 +559,10 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
               <span>Fecha Emisión</span>
             </label>
             <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.fechaRecepcion" />
+              <span>Fecha Recepción</span>
+            </label>
+            <label class="column-toggle">
               <input type="checkbox" v-model="columnVisibility.montoNeto" />
               <span>Monto Neto</span>
             </label>
@@ -647,7 +682,28 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
           </div>
         </div>
 
-        <div class="table-container">
+        <!-- Horizontal Scroll Controls -->
+        <div class="table-scroll-controls">
+          <div class="scroll-info">
+            <span class="scroll-label">Desplazamiento horizontal:</span>
+            <div class="scroll-buttons">
+              <button @click="scrollTableLeft" class="scroll-btn" title="Desplazar a la izquierda">
+                ←
+              </button>
+              <button @click="scrollTableRight" class="scroll-btn" title="Desplazar a la derecha">
+                →
+              </button>
+              <button @click="scrollTableToStart" class="scroll-btn" title="Ir al inicio">
+                ⇤
+              </button>
+              <button @click="scrollTableToEnd" class="scroll-btn" title="Ir al final">
+                ⇥
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container" ref="tableContainer" @scroll="handleTableScroll">
           <table class="compras-table">
             <thead>
               <tr>
@@ -665,6 +721,9 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
                 </th>
                 <th v-if="columnVisibility.fechaEmision" @click="sortBy('fechaEmision')" class="sortable">
                   Fecha Emisión {{ getSortIcon('fechaEmision') }}
+                </th>
+                <th v-if="columnVisibility.fechaRecepcion" @click="sortBy('fechaRecepcion')" class="sortable">
+                  Fecha Recepción {{ getSortIcon('fechaRecepcion') }}
                 </th>
                 <th v-if="columnVisibility.montoNeto" @click="sortBy('montoNeto')" class="sortable">
                   Monto Neto {{ getSortIcon('montoNeto') }}
@@ -690,6 +749,7 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
                 <td v-if="columnVisibility.razonSocial" class="razon-social" :title="compra.razonSocial">{{ compra.razonSocial }}</td>
                 <td v-if="columnVisibility.folio">{{ compra.folio }}</td>
                 <td v-if="columnVisibility.fechaEmision">{{ formatDate(compra.fechaEmision) }}</td>
+                <td v-if="columnVisibility.fechaRecepcion">{{ formatDate(compra.fechaRecepcion) }}</td>
                 <td v-if="columnVisibility.montoNeto" class="amount">{{ formatCurrency(compra.montoNeto) }}</td>
                 <td v-if="columnVisibility.montoIva" class="amount">{{ formatCurrency(compra.montoIvaRecuperable) }}</td>
                 <td v-if="columnVisibility.montoTotal" class="amount total">{{ formatCurrency(compra.montoTotal) }}</td>
@@ -984,6 +1044,62 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
   font-weight: 500;
 }
 
+/* Table Scroll Controls */
+.table-scroll-controls {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.scroll-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scroll-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.scroll-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.scroll-btn {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+}
+
+.scroll-btn:hover {
+  background: #e9ecef;
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.scroll-btn:active {
+  transform: translateY(1px);
+}
+
 /* Column Controls Panel */
 .column-controls-panel {
   background: #f8f9fa;
@@ -1129,9 +1245,10 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
 
 .table-container {
   overflow-x: auto;
-  margin-top: 1rem;
-  border-radius: 8px;
+  margin-top: 0;
+  border-radius: 0 0 8px 8px;
   border: 1px solid #dee2e6;
+  border-top: none;
   background: white;
 }
 
@@ -1491,6 +1608,17 @@ h2 {
     justify-content: center;
   }
 
+  /* Mobile scroll controls */
+  .table-scroll-controls {
+    padding: 0.5rem;
+  }
+
+  .scroll-info {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
   /* Mobile table optimization */
   .table-container {
     border-radius: 4px;
@@ -1591,6 +1719,16 @@ h2 {
   .compras-table th,
   .compras-table td {
     padding: 0.3rem 0.2rem;
+  }
+
+  .scroll-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .table-scroll-controls {
+    padding: 0.4rem;
   }
 }
 </style>
