@@ -70,8 +70,8 @@ onMounted(async () => {
       formsStore.loadProveedores()
     ]);
 
-    // Load main data
-    await formsStore.getAll();
+    // Load main data using current month and year from store
+    await formsStore.refreshWithCurrentDate();
   } catch (error) {
     console.error('Error loading data:', error);
   }
@@ -255,10 +255,23 @@ const refreshData = async () => {
       await formsStore.loadProveedores();
     }
 
-    await formsStore.getAll();
+    await formsStore.refreshWithCurrentDate();
   } catch (error) {
     console.error('Error refreshing data:', error);
   }
+};
+
+// Date selection handlers
+const onMonthChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  formsStore.setMonth(target.value);
+  await refreshData();
+};
+
+const onYearChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  formsStore.setYear(target.value);
+  await refreshData();
 };
 
 // Download function to open SII document link
@@ -341,13 +354,53 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
     <!-- Header -->
     <div class="header">
       <h1>Consultas SII - Libro de Compras</h1>
-      <button
-        @click="refreshData"
-        :disabled="formsStore.loading"
-        class="refresh-btn"
-      >
-        {{ formsStore.loading ? 'Cargando...' : 'Actualizar' }}
-      </button>
+      <div class="header-controls">
+        <div class="date-selectors">
+          <div class="selector-group">
+            <label for="month-select">Mes:</label>
+            <select
+              id="month-select"
+              :value="formsStore.currentMonth"
+              @change="onMonthChange"
+              class="date-select"
+            >
+              <option value="01">Enero</option>
+              <option value="02">Febrero</option>
+              <option value="03">Marzo</option>
+              <option value="04">Abril</option>
+              <option value="05">Mayo</option>
+              <option value="06">Junio</option>
+              <option value="07">Julio</option>
+              <option value="08">Agosto</option>
+              <option value="09">Septiembre</option>
+              <option value="10">Octubre</option>
+              <option value="11">Noviembre</option>
+              <option value="12">Diciembre</option>
+            </select>
+          </div>
+          <div class="selector-group">
+            <label for="year-select">Año:</label>
+            <select
+              id="year-select"
+              :value="formsStore.currentYear"
+              @change="onYearChange"
+              class="date-select"
+            >
+              <option value="2023">2023</option>
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+            </select>
+          </div>
+        </div>
+        <button
+          @click="refreshData"
+          :disabled="formsStore.loading"
+          class="refresh-btn"
+        >
+          {{ formsStore.loading ? 'Cargando...' : 'Actualizar' }}
+        </button>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -718,11 +771,59 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .header h1 {
   color: #2c3e50;
   margin: 0;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.date-selectors {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.selector-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.date-select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  min-width: 100px;
+}
+
+.date-select:hover {
+  border-color: #3498db;
+}
+
+.date-select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .refresh-btn, .retry-btn, .load-btn {
@@ -1334,6 +1435,23 @@ h2 {
     flex-direction: column;
     gap: 1rem;
     text-align: center;
+    align-items: stretch;
+  }
+
+  .header-controls {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .date-selectors {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .selector-group {
+    flex: 1;
+    min-width: 120px;
   }
 
   .caratula-info, .totals-info {

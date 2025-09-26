@@ -26,16 +26,23 @@ export const useFormsStore = defineStore('forms', () => {
   const tiposDte = ref<TipoDte[]>([])
   const proveedores = ref<Proveedor[]>([])
 
+  // Date selection state
+  const currentMonth = ref('08')
+  const currentYear = ref('2025')
+
   // Legacy method for backwards compatibility
-  const getAll = async (month: string = '08', year: string = '2025') => {
+  const getAll = async (month?: string, year?: string) => {
+    const actualMonth = month || currentMonth.value
+    const actualYear = year || currentYear.value
+
     loading.value = true
     error.value = null
 
     try {
       // For now, we'll use a default empresa RUT and try to get data from the new backend
       const rutEmpresa = '77147627-9'
-      const anio = year
-      const mes = month
+      const anio = actualYear
+      const mes = actualMonth
 
       // Get the empresa data
       const empresaResponse = await dteApi.getEmpresaByRut(rutEmpresa)
@@ -178,6 +185,24 @@ export const useFormsStore = defineStore('forms', () => {
     }
   }
 
+  // Methods to update date selection
+  const setMonth = (month: string) => {
+    currentMonth.value = month
+  }
+
+  const setYear = (year: string) => {
+    currentYear.value = year
+  }
+
+  const setMonthAndYear = (month: string, year: string) => {
+    currentMonth.value = month
+    currentYear.value = year
+  }
+
+  const refreshWithCurrentDate = async () => {
+    return await getAll(currentMonth.value, currentYear.value)
+  }
+
   // Helper functions
   const getMonthName = (monthNumber: number): string => {
     const months = [
@@ -259,6 +284,10 @@ export const useFormsStore = defineStore('forms', () => {
     tiposDte,
     proveedores,
 
+    // Date selection state
+    currentMonth,
+    currentYear,
+
     // Legacy actions
     getAll,
 
@@ -268,6 +297,12 @@ export const useFormsStore = defineStore('forms', () => {
     loadResumenCompras,
     loadDetalleCompras,
     loadTiposDte,
-    loadProveedores
+    loadProveedores,
+
+    // Date selection actions
+    setMonth,
+    setYear,
+    setMonthAndYear,
+    refreshWithCurrentDate
   }
 })
