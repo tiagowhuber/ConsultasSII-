@@ -123,4 +123,13 @@ export const notasApi = {
   // Delete nota
   deleteNota: (folio: string) =>
     api.delete(`/api/notas/${folio}`),
-};export default api;
+};
+
+// SII API methods
+export const siiApi = {
+  // Fetch and store SII data
+  fetchAndStore: (year: string, month: string) =>
+    api.post(`/api/sii/fetch-and-store/${year}/${month}`),
+};
+
+export default api;

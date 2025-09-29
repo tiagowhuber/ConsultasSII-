@@ -2,10 +2,12 @@
 import { onMounted, computed, ref } from 'vue';
 import { useFormsStore } from '@/stores/dte';
 import { useNotasStore } from '@/stores/notas';
+import { useSiiStore } from '@/stores/sii';
 import type { DetalleCompra, ResumenCompra } from '@/types/api';
 
 const formsStore = useFormsStore();
 const notasStore = useNotasStore();
+const siiStore = useSiiStore();
 
 // Filter and sorting state
 const filters = ref({
@@ -251,6 +253,23 @@ const totales = computed(() => {
   };
 });
 
+const fetchSiiData = async () => {
+  try {
+    siiStore.clearError();
+
+    const year = formsStore.currentYear;
+    const month = formsStore.currentMonth;
+
+    await siiStore.fetchAndStore(year, month);
+
+    // After successful SII fetch, refresh the local data
+    await refreshData();
+  } catch (error) {
+    console.error('Error fetching SII data:', error);
+    // Error is already handled in the store
+  }
+};
+
 const refreshData = async () => {
   try {
     // Load reference data if not already loaded
@@ -425,18 +444,31 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
           </div>
         </div>
         <button
+          @click="fetchSiiData"
+          :disabled="siiStore.loading || formsStore.loading"
+          class="refresh-btn sii-fetch-btn"
+        >
+          {{ siiStore.loading ? 'Obteniendo datos de SII...' : formsStore.loading ? 'Cargando...' : 'Obtener datos de SII' }}
+        </button>
+        <!-- <button
           @click="refreshData"
           :disabled="formsStore.loading"
-          class="refresh-btn"
+          class="refresh-btn secondary-btn"
         >
-          {{ formsStore.loading ? 'Cargando...' : 'Actualizar' }}
-        </button>
+          {{ formsStore.loading ? 'Cargando...' : 'Actualizar vista' }}
+        </button> -->
       </div>
     </div>
 
     <!-- Loading State -->
     <div v-if="formsStore.loading" class="loading">
       <p>Cargando datos...</p>
+    </div>
+
+    <!-- SII Error State -->
+    <div v-if="siiStore.error" class="error sii-error">
+      <p>Error SII: {{ siiStore.error }}</p>
+      <button @click="fetchSiiData" class="retry-btn">Reintentar obtención de SII</button>
     </div>
 
     <!-- Error State -->
@@ -904,6 +936,28 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
 .refresh-btn:disabled {
   background: #bdc3c7;
   cursor: not-allowed;
+}
+
+.sii-fetch-btn {
+  background: #e74c3c;
+  margin-right: 0.5rem;
+}
+
+.sii-fetch-btn:hover {
+  background: #c0392b;
+}
+
+.secondary-btn {
+  background: #6c757d;
+}
+
+.secondary-btn:hover {
+  background: #5a6268;
+}
+
+.sii-error {
+  border-left: 4px solid #e74c3c;
+  background: #fdf2f2 !important;
 }
 
 .loading, .error, .empty-state {
