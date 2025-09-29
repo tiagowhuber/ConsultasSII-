@@ -448,7 +448,7 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
           :disabled="siiStore.loading || formsStore.loading"
           class="refresh-btn sii-fetch-btn"
         >
-          {{ siiStore.loading ? 'Obteniendo datos de SII...' : formsStore.loading ? 'Cargando...' : 'Obtener datos de SII' }}
+          {{ siiStore.loading ? '🔄 Obteniendo datos del SII... (puede tomar 30s)' : formsStore.loading ? 'Cargando...' : '📥 Obtener datos del SII' }}
         </button>
         <!-- <button
           @click="refreshData"
@@ -460,8 +460,33 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
       </div>
     </div>
 
+    <!-- SII Loading State -->
+    <div v-if="siiStore.loading" class="sii-loading-overlay">
+      <div class="sii-loading-content">
+        <div class="sii-loading-spinner">
+          <div class="spinner-ring"></div>
+          <div class="spinner-inner"></div>
+        </div>
+        <h3>Obteniendo datos del SII</h3>
+        <p class="loading-message">Conectando con el Servicio de Impuestos Internos...</p>
+        <p class="loading-submessage">Este proceso puede tomar hasta 30 segundos</p>
+        <div class="loading-progress">
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <span class="progress-text">Procesando solicitud...</span>
+        </div>
+        <div class="loading-tips">
+          <ul>
+            <li>Se están descargando los documentos del período seleccionado</li>
+            <li>No es necesario mantener esta ventana abierta</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <!-- Loading State -->
-    <div v-if="formsStore.loading" class="loading">
+    <div v-else-if="formsStore.loading" class="loading">
       <p>Cargando datos...</p>
     </div>
 
@@ -958,6 +983,230 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
 .sii-error {
   border-left: 4px solid #e74c3c;
   background: #fdf2f2 !important;
+}
+
+/* SII Loading Overlay Styles */
+.sii-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.sii-loading-content {
+  background: white;
+  border-radius: 20px;
+  padding: 3rem;
+  text-align: center;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideInUp 0.4s ease-out;
+}
+
+.sii-loading-spinner {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 2rem;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #525252;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-inner {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 60px;
+  height: 60px;
+  border: 3px solid #f8f9fa;
+  border-bottom: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite reverse;
+}
+
+.sii-loading-content h3 {
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.loading-message {
+  color: #666;
+  font-size: 1.1em;
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+}
+
+.loading-submessage {
+  color: #999;
+  font-size: 0.9em;
+  margin: 0 0 2rem 0;
+  font-style: italic;
+}
+
+.loading-progress {
+  margin: 2rem 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #525252, #3498db, #525252);
+  background-size: 200% 100%;
+  animation: progressFlow 2s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.progress-text {
+  color: #666;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.loading-tips {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.loading-tips h4 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-tips ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  list-style: none;
+}
+
+.loading-tips li {
+  margin: 0.75rem 0;
+  color: #555;
+  font-size: 0.9em;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.loading-tips li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: #28a745;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes progressFlow {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.2);
+  }
+}
+
+/* Mobile responsive for loading overlay */
+@media (max-width: 768px) {
+  .sii-loading-content {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+
+  .sii-loading-spinner {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1.5rem;
+  }
+
+  .spinner-ring {
+    width: 60px;
+    height: 60px;
+  }
+
+  .spinner-inner {
+    top: 8px;
+    left: 8px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .sii-loading-content h3 {
+    font-size: 1.3em;
+  }
+
+  .loading-tips {
+    padding: 1rem;
+  }
+
+  .loading-tips li {
+    font-size: 0.85em;
+  }
 }
 
 .loading, .error, .empty-state {
