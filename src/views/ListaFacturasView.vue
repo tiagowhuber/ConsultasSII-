@@ -10,6 +10,8 @@ const notasStore = useNotasStore();
 const siiStore = useSiiStore();
 
 // Filter and sorting state
+const globalSearch = ref('');
+
 const filters = ref({
   rutProveedor: '',
   razonSocial: '',
@@ -92,7 +94,30 @@ const resumenes = computed((): ResumenCompra[] => formsStore.data?.compras.resum
 const filteredDetalleCompras = computed((): DetalleCompra[] => {
   let compras = formsStore.data?.compras.detalleCompras || [];
 
-  // Apply filters
+  // Apply global search first
+  if (globalSearch.value.trim()) {
+    const searchTerm = globalSearch.value.toLowerCase().trim();
+    compras = compras.filter(compra => {
+      // Search across all relevant fields
+      const searchableText = [
+        compra.tipoDTEString,
+        compra.rutProveedor,
+        compra.razonSocial,
+        compra.folio.toString(),
+        formatDate(compra.fechaEmision),
+        formatDate(compra.fechaRecepcion),
+        formatCurrency(compra.montoNeto),
+        formatCurrency(compra.montoIvaRecuperable),
+        formatCurrency(compra.montoTotal),
+        compra.estado,
+        compra.comentario || ''
+      ].join(' ').toLowerCase();
+
+      return searchableText.includes(searchTerm);
+    });
+  }
+
+  // Apply specific filters
   if (filters.value.rutProveedor) {
     compras = compras.filter(compra =>
       compra.rutProveedor.toLowerCase().includes(filters.value.rutProveedor.toLowerCase())
@@ -166,6 +191,7 @@ const uniqueEstados = computed(() => {
 
 // Utility functions
 const clearFilters = () => {
+  globalSearch.value = '';
   filters.value = {
     rutProveedor: '',
     razonSocial: '',
@@ -601,6 +627,40 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
 
       <!-- Detailed Table -->
       <div class="table-section">
+        <!-- Global Search Bar -->
+        <div class="global-search-section">
+          <div class="search-container">
+            <div class="search-input-wrapper">
+              <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="21 21l-4.35-4.35"/>
+              </svg>
+              <input
+                v-model="globalSearch"
+                type="text"
+                placeholder="Buscar"
+                class="global-search-input"
+              />
+              <button
+                v-if="globalSearch"
+                @click="globalSearch = ''"
+                class="clear-search-btn"
+                title="Limpiar búsqueda"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div class="search-results-info">
+              <span v-if="globalSearch" class="search-results-text">
+                {{ detalleCompras.length }} resultado{{ detalleCompras.length !== 1 ? 's' : '' }} para "{{ globalSearch }}"
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div class="table-header">
           <h2>Detalle de Compras</h2>
           <div class="table-controls">
@@ -1355,6 +1415,97 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Global Search Styles */
+.global-search-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.search-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.search-input-wrapper:focus-within {
+  border-color: #3498db;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+  transform: translateY(-1px);
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  color: #6c757d;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.global-search-input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: transparent;
+  outline: none;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.global-search-input::placeholder {
+  color: #adb5bd;
+  font-weight: 400;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: #f8f9fa;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6c757d;
+}
+
+.clear-search-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+  transform: scale(1.1);
+}
+
+.search-results-info {
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.search-results-text {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+  background: #f8f9fa;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  display: inline-block;
+}
+
 .table-header {
   display: flex;
   justify-content: space-between;
@@ -1967,6 +2118,46 @@ h2 {
     justify-content: center;
   }
 
+  /* Mobile search styles */
+  .global-search-section {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .search-container {
+    max-width: 100%;
+  }
+
+  .search-input-wrapper {
+    border-radius: 8px;
+  }
+
+  .global-search-input {
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+    font-size: 0.9rem;
+  }
+
+  .global-search-input::placeholder {
+    font-size: 0.85rem;
+  }
+
+  .search-icon {
+    left: 0.75rem;
+    width: 18px;
+    height: 18px;
+  }
+
+  .clear-search-btn {
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+  }
+
+  .search-results-text {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+  }
+
   /* Mobile scroll controls */
   .table-scroll-controls {
     padding: 0.5rem;
@@ -2088,6 +2279,16 @@ h2 {
 
   .table-scroll-controls {
     padding: 0.4rem;
+  }
+
+  /* Small screen search styles */
+  .global-search-input::placeholder {
+    content: "Buscar...";
+  }
+
+  .search-results-text {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
   }
 }
 </style>
