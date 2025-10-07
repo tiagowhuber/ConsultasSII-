@@ -138,6 +138,7 @@ export const useNotasStore = defineStore('notas', () => {
           folio,
           comentario,
           contabilizado: false,
+          pagado: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
@@ -180,6 +181,7 @@ export const useNotasStore = defineStore('notas', () => {
           folio,
           comentario: undefined,
           contabilizado,
+          pagado: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
@@ -197,6 +199,49 @@ export const useNotasStore = defineStore('notas', () => {
     } catch (err: unknown) {
       console.error('Error updating contabilizado status:', err)
       error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error updating contabilizado status'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Update pagado status only
+  const updatePagado = async (folio: string, pagado: boolean): Promise<Notas | null> => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await notasApi.updateNotaPagado(folio, pagado)
+
+      // Update local state
+      const nota = getNotaByFolio(folio)
+      if (nota) {
+        nota.pagado = pagado
+        nota.updatedAt = new Date().toISOString()
+      } else {
+        // Create local representation if it doesn't exist
+        const newNota: Notas = {
+          notaId: 0, // Will be updated when we fetch from server
+          folio,
+          comentario: undefined,
+          contabilizado: false,
+          pagado,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        notas.value.push(newNota)
+
+        // Try to fetch the actual nota from server to get the real ID
+        try {
+          await loadNotaByFolio(folio)
+        } catch {
+          // If it fails, the local representation is fine for now
+        }
+      }
+
+      return response.data
+    } catch (err: unknown) {
+      console.error('Error updating pagado status:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error updating pagado status'
       return null
     } finally {
       loading.value = false
@@ -251,6 +296,7 @@ export const useNotasStore = defineStore('notas', () => {
     updateNota,
     updateComment,
     updateContabilizado,
+    updatePagado,
     deleteNota,
     clearNotas
   }

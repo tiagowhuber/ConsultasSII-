@@ -42,6 +42,7 @@ const columnVisibility = ref({
   montoTotal: true,
   estado: true,
   contabilizado: true,
+  pagado: true,
   comentario: true,
   descargar: true
 });
@@ -199,6 +200,7 @@ const resetColumns = () => {
     montoTotal: true,
     estado: true,
     contabilizado: true,
+    pagado: true,
     comentario: false,
     descargar: true
   };
@@ -217,6 +219,7 @@ const showEssentialColumns = () => {
     montoTotal: true,
     estado: true,
     contabilizado: true,
+    pagado: true,
     comentario: false,
     descargar: true
   };
@@ -371,7 +374,31 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
     console.error('Error updating contabilizado status:', error);
     // You could add a toast notification here
   }
-};const saveComment = async (compra: DetalleCompra, event?: Event) => {
+};
+
+// Toggle pagado status
+const togglePagado = async (compra: DetalleCompra) => {
+  try {
+    const currentStatus = compra.pagado || false;
+    const newPagadoStatus = !currentStatus;
+
+    // Call the notas store method with folio
+    await notasStore.updatePagado(
+      compra.folio.toString(),
+      newPagadoStatus
+    );
+
+    // Update local state
+    compra.pagado = newPagadoStatus;
+
+    console.log(`Pagado status updated for folio ${compra.folio}: ${newPagadoStatus}`);
+  } catch (error) {
+    console.error('Error updating pagado status:', error);
+    // You could add a toast notification here
+  }
+};
+
+const saveComment = async (compra: DetalleCompra, event?: Event) => {
   if (editingComment.value === null) return;
 
   // Prevent default behavior and stop propagation to avoid page scrolling
@@ -640,6 +667,10 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
               <span>Contabilizado</span>
             </label>
             <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.pagado" />
+              <span>Pagado</span>
+            </label>
+            <label class="column-toggle">
               <input type="checkbox" v-model="columnVisibility.comentario" />
               <span>Comentario</span>
             </label>
@@ -795,6 +826,7 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
                   Estado {{ getSortIcon('estado') }}
                 </th>
                 <th v-if="columnVisibility.contabilizado">Contabilizado</th>
+                <th v-if="columnVisibility.pagado">Pagado</th>
                 <th v-if="columnVisibility.comentario">Comentario</th>
                 <th v-if="columnVisibility.descargar">Descargar</th>
               </tr>
@@ -822,6 +854,17 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
                       :checked="compra.contabilizado || false"
                       @change="toggleContabilizado(compra)"
                       class="contabilizado-checkbox"
+                    />
+                    <span class="checkmark"></span>
+                  </label>
+                </td>
+                <td v-if="columnVisibility.pagado" class="pagado-cell">
+                  <label class="checkbox-wrapper">
+                    <input
+                      type="checkbox"
+                      :checked="compra.pagado || false"
+                      @change="togglePagado(compra)"
+                      class="pagado-checkbox"
                     />
                     <span class="checkmark"></span>
                   </label>
@@ -1667,14 +1710,21 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
 }
 
 .compras-table th:nth-child(11),
-.compras-table td:nth-child(11) { /* Comentario */
+.compras-table td:nth-child(11) { /* Pagado */
+  width: 90px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.compras-table th:nth-child(12),
+.compras-table td:nth-child(12) { /* Comentario */
   width: 200px;
   min-width: 150px;
   max-width: 300px;
 }
 
-.compras-table th:nth-child(12),
-.compras-table td:nth-child(12) { /* Descargar */
+.compras-table th:nth-child(13),
+.compras-table td:nth-child(13) { /* Descargar */
   width: 60px;
   min-width: 50px;
   text-align: center;
@@ -1764,6 +1814,12 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
   padding: 0.5rem 0.25rem;
 }
 
+/* Pagado checkbox styles */
+.pagado-cell {
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+}
+
 .checkbox-wrapper {
   display: inline-flex;
   align-items: center;
@@ -1771,7 +1827,7 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
   position: relative;
 }
 
-.contabilizado-checkbox {
+.contabilizado-checkbox, .pagado-checkbox {
   width: 18px;
   height: 18px;
   margin: 0;
@@ -1780,11 +1836,11 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
   transform: scale(1.2);
 }
 
-.contabilizado-checkbox:checked {
+.contabilizado-checkbox:checked, .pagado-checkbox:checked {
   background-color: #28a745;
 }
 
-.contabilizado-checkbox:hover {
+.contabilizado-checkbox:hover, .pagado-checkbox:hover {
   transform: scale(1.3);
   transition: transform 0.2s ease;
 }

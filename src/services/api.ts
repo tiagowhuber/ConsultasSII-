@@ -104,12 +104,14 @@ export const notasApi = {
     folio: string;
     comentario?: string;
     contabilizado?: boolean;
+    pagado?: boolean;
   }) => api.post<Notas>('/api/notas', data),
 
   // Update nota
   updateNota: (folio: string, data: {
     comentario?: string;
     contabilizado?: boolean;
+    pagado?: boolean;
   }) => api.put<Notas>(`/api/notas/${folio}`, data),
 
   // Update nota comment
@@ -119,6 +121,10 @@ export const notasApi = {
   // Update nota contabilizado status
   updateNotaContabilizado: (folio: string, contabilizado: boolean) =>
     api.put(`/api/notas/${folio}/contabilizado`, { contabilizado }),
+
+  // Update nota pagado status
+  updateNotaPagado: (folio: string, pagado: boolean) =>
+    api.put(`/api/notas/${folio}/pagado`, { pagado }),
 
   // Delete nota
   deleteNota: (folio: string) =>

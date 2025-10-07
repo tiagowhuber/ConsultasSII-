@@ -89,6 +89,7 @@ export interface Notas {
   folio: string;
   comentario?: string;
   contabilizado: boolean;
+  pagado: boolean;
   createdAt: string;
   updatedAt: string;
   detalleCompra?: DetalleCompras;
@@ -134,6 +135,7 @@ export interface DetalleCompra {
   fechaAcuse: string | null;
   otrosImpuestos?: OtroImpuesto[];
   contabilizado?: boolean;
+  pagado?: boolean;
 }
 
 export interface ResumenCompra {
