@@ -3,6 +3,7 @@ import { onMounted, computed, ref } from 'vue';
 import { useFormsStore } from '@/stores/dte';
 import { useNotasStore } from '@/stores/notas';
 import { useSiiStore } from '@/stores/sii';
+import NotificationBell from '@/components/NotificationBell.vue';
 import type { DetalleCompra, ResumenCompra } from '@/types/api';
 import * as XLSX from 'xlsx';
 
@@ -557,6 +558,10 @@ const exportToExcel = () => {
             </select>
           </div>
         </div>
+
+        <!-- Add notification bell -->
+        <NotificationBell />
+
         <button
           @click="fetchSiiData"
           :disabled="siiStore.loading || formsStore.loading"
