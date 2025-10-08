@@ -24,7 +24,7 @@ class NotificationService {
 
     const serverUrl = import.meta.env.DEV
       ? 'http://localhost:3000'
-      : 'https://consultas-sii-api.vercel.app';
+      : 'https://consultassii-api.onrender.com/';
 
     this.socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
