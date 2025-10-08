@@ -4,6 +4,7 @@ import { useFormsStore } from '@/stores/dte';
 import { useNotasStore } from '@/stores/notas';
 import { useSiiStore } from '@/stores/sii';
 import type { DetalleCompra, ResumenCompra } from '@/types/api';
+import * as XLSX from 'xlsx';
 
 const formsStore = useFormsStore();
 const notasStore = useNotasStore();
@@ -450,6 +451,66 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
     // You could add a toast notification here
   }
 };
+
+// Excel export function
+const exportToExcel = () => {
+  try {
+    // Prepare data for export
+    const exportData = detalleCompras.value.map(compra => ({
+      'Tipo DTE': compra.tipoDTEString,
+      'RUT Proveedor': compra.rutProveedor,
+      'Razón Social': compra.razonSocial,
+      'Folio': compra.folio,
+      'Fecha Emisión': formatDate(compra.fechaEmision),
+      'Fecha Recepción': formatDate(compra.fechaRecepcion),
+      'Monto Neto': compra.montoNeto,
+      'IVA Recuperable': compra.montoIvaRecuperable,
+      'Monto Total': compra.montoTotal,
+      'Estado': compra.estado,
+      'Contabilizado': compra.contabilizado ? 'Sí' : 'No',
+      'Pagado': compra.pagado ? 'Sí' : 'No',
+      'Comentario': compra.comentario || ''
+    }));
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Set column widths
+    const colWidths = [
+      { width: 12 }, // Tipo DTE
+      { width: 15 }, // RUT Proveedor
+      { width: 30 }, // Razón Social
+      { width: 12 }, // Folio
+      { width: 15 }, // Fecha Emisión
+      { width: 15 }, // Fecha Recepción
+      { width: 15 }, // Monto Neto
+      { width: 15 }, // IVA Recuperable
+      { width: 15 }, // Monto Total
+      { width: 12 }, // Estado
+      { width: 12 }, // Contabilizado
+      { width: 10 }, // Pagado
+      { width: 30 }  // Comentario
+    ];
+    ws['!cols'] = colWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Compras');
+
+    // Generate filename with current date and period
+    const period = `${caratula.value?.nombreMes || formsStore.currentMonth}-${caratula.value?.anio || formsStore.currentYear}`;
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `Libro_Compras_${period}_${currentDate}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, filename);
+
+    console.log(`Excel file exported: ${filename}`);
+  } catch (error) {
+    console.error('Error exporting to Excel:', error);
+    // You could add a toast notification here
+  }
+};
 </script>
 
 <template>
@@ -664,6 +725,9 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
         <div class="table-header">
           <h2>Detalle de Compras</h2>
           <div class="table-controls">
+            <button @click="exportToExcel" class="excel-export-btn">
+              📊 Exportar a Excel
+            </button>
             <button @click="showColumnControls = !showColumnControls" class="column-toggle-btn">
               {{ showColumnControls ? 'Opciones de Columnas' : 'Opciones de Columnas' }}
             </button>
@@ -1520,6 +1584,32 @@ const saveComment = async (compra: DetalleCompra, event?: Event) => {
   flex-wrap: wrap;
 }
 
+.excel-export-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.excel-export-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.excel-export-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(40, 167, 69, 0.3);
+}
+
 .column-toggle-btn, .filter-toggle-btn {
   background: #6c757d;
   color: white;
@@ -2099,6 +2189,14 @@ h2 {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.5rem;
+  }
+
+  .excel-export-btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    flex: 1;
+    justify-content: center;
+    min-width: 120px;
   }
 
   .column-presets {
