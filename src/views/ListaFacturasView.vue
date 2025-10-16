@@ -1051,7 +1051,8 @@ const exportToExcel = () => {
 <style scoped>
 .consultas-view {
   padding: 2rem;
-  max-width: 1400px;
+  max-width: 95%;
+  width: 95%;
   margin: 0 auto;
 }
 
