@@ -26,9 +26,10 @@ export const useFormsStore = defineStore('forms', () => {
   const tiposDte = ref<TipoDte[]>([])
   const proveedores = ref<Proveedor[]>([])
 
-  // Date selection state
-  const currentMonth = ref('08')
-  const currentYear = ref('2025')
+  // Date selection state - Initialize with current date
+  const now = new Date()
+  const currentMonth = ref((now.getMonth() + 1).toString().padStart(2, '0'))
+  const currentYear = ref(now.getFullYear().toString())
 
   // Legacy method for backwards compatibility
   const getAll = async (month?: string, year?: string) => {
@@ -40,7 +41,7 @@ export const useFormsStore = defineStore('forms', () => {
 
     try {
       // For now, we'll use a default empresa RUT and try to get data from the new backend
-      const rutEmpresa = '65.145.564-2'
+      const rutEmpresa = '65145564-2'
       const anio = actualYear
       const mes = actualMonth
 

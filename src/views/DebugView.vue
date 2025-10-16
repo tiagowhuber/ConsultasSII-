@@ -88,7 +88,7 @@ const testTiposDte = () => runTest(() => formsStore.loadTiposDte(), 'Tipos DTE')
 const testProveedores = () => runTest(() => formsStore.loadProveedores(), 'Proveedores');
 
 const testPeriodos = () => runTest(() => {
-  const rutEmpresa = '65.145.564-2'; // Default test RUT
+  const rutEmpresa = '65145564-2'; // Default test RUT
   return formsStore.loadPeriodosByEmpresa(rutEmpresa, '2025', '08');
 }, 'Períodos');
 

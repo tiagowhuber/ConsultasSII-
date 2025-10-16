@@ -41,14 +41,14 @@ const columnVisibility = ref({
   folio: true,
   fechaEmision: true,
   fechaRecepcion: true,
-  montoNeto: false,// Hidden by default
-  montoIva: false, // Hidden by default
+  montoNeto: true,// Hidden by default
+  montoIva: true, // Hidden by default
   montoTotal: true,
   estado: true,
   contabilizado: true,
   pagado: true,
   comentario: true,
-  descargar: true
+  descargar: false
 });
 
 // Comment editing state
@@ -224,13 +224,13 @@ const resetColumns = () => {
     fechaEmision: true,
     fechaRecepcion: true,
     montoNeto: true,
-    montoIva: false,
+    montoIva: true,
     montoTotal: true,
     estado: true,
     contabilizado: true,
     pagado: true,
-    comentario: false,
-    descargar: true
+    comentario: true,
+    descargar: false
   };
 };
 
@@ -249,7 +249,7 @@ const showEssentialColumns = () => {
     contabilizado: true,
     pagado: true,
     comentario: false,
-    descargar: true
+    descargar: false
   };
 };
 
