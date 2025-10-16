@@ -62,6 +62,7 @@ const tableContainer = ref<HTMLElement | null>(null);
 const isWakingUp = ref(false);
 const serverIsWarm = ref(false);
 const lastWakeupTime = ref<Date | null>(null);
+const showWakeupButton = ref(false);
 
 // Format currency
 const formatCurrency = (amount: number) => {
@@ -83,6 +84,13 @@ onMounted(async () => {
     // Check if server is already warm on initial load
     await wakeUpServer(false); // Silent check, no user feedback
 
+    // Wait 7 seconds before showing the wake-up button if server is not warm
+    setTimeout(() => {
+      if (!serverIsWarm.value || needsWakeup.value) {
+        showWakeupButton.value = true;
+      }
+    }, 7000);
+
     // Try to load some reference data first
     await Promise.allSettled([
       formsStore.loadTiposDte(),
@@ -94,9 +102,7 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error loading data:', error);
   }
-});
-
-// Computed properties
+});// Computed properties
 const caratula = computed(() => formsStore.data?.caratula);
 const resumenes = computed((): ResumenCompra[] => formsStore.data?.compras.resumenes || []);
 
@@ -312,6 +318,7 @@ const wakeUpServer = async (showFeedback = true) => {
       const data = await response.json();
       serverIsWarm.value = true;
       lastWakeupTime.value = new Date();
+      showWakeupButton.value = false; // Hide button when server is warm
       if (showFeedback) {
         console.log('Server is now awake!', data);
       }
@@ -631,7 +638,7 @@ const exportToExcel = () => {
 
         <!-- Wake up server button -->
         <button
-          v-if="!(serverIsWarm && !needsWakeup)"
+          v-if="showWakeupButton && !(serverIsWarm && !needsWakeup)"
           @click="wakeUpServer(true)"
           :disabled="isWakingUp"
           class="refresh-btn wake-up-btn"
