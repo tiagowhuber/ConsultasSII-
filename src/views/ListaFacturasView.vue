@@ -58,6 +58,11 @@ const editingCommentText = ref('');
 // Table scroll state
 const tableContainer = ref<HTMLElement | null>(null);
 
+// Server wake-up state
+const isWakingUp = ref(false);
+const serverIsWarm = ref(false);
+const lastWakeupTime = ref<Date | null>(null);
+
 // Format currency
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('es-CL', {
@@ -284,9 +289,61 @@ const totales = computed(() => {
   };
 });
 
+// Wake up server function
+const wakeUpServer = async (showFeedback = true) => {
+  if (isWakingUp.value) return;
+
+  try {
+    isWakingUp.value = true;
+
+    // Make a health check request to wake up the server
+    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseURL}/api/scheduler/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      serverIsWarm.value = true;
+      lastWakeupTime.value = new Date();
+      if (showFeedback) {
+        console.log('Server is now awake!', data);
+      }
+    } else {
+      throw new Error(`Health check failed: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Error waking up server:', error);
+    // Don't show error for auto wake-ups, only manual ones
+    if (showFeedback) {
+      // You could add a toast notification here
+      alert('Failed to wake up server. It may take a moment to respond.');
+    }
+  } finally {
+    isWakingUp.value = false;
+  }
+};
+
+// Check if server needs warming (if it's been more than 15 minutes since last activity)
+const needsWakeup = computed(() => {
+  if (!lastWakeupTime.value) return true;
+  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+  return lastWakeupTime.value < fifteenMinutesAgo;
+});
+
 const fetchSiiData = async () => {
   try {
     siiStore.clearError();
+
+    // Auto wake-up server if needed before making the SII request
+    if (needsWakeup.value) {
+      await wakeUpServer(false); // Don't show feedback for auto wake-up
+      // Give server a moment to fully wake up
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
 
     const year = formsStore.currentYear;
     const month = formsStore.currentMonth;
@@ -303,6 +360,13 @@ const fetchSiiData = async () => {
 
 const refreshData = async () => {
   try {
+    // Auto wake-up server if needed before making requests
+    if (needsWakeup.value) {
+      await wakeUpServer(false); // Don't show feedback for auto wake-up
+      // Give server a moment to fully wake up
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     // Load reference data if not already loaded
     if (formsStore.tiposDte.length === 0) {
       await formsStore.loadTiposDte();
@@ -562,6 +626,18 @@ const exportToExcel = () => {
         <!-- Add notification bell -->
         <NotificationBell />
 
+        <!-- Wake up server button -->
+        <button
+          v-if="!(serverIsWarm && !needsWakeup)"
+          @click="wakeUpServer(true)"
+          :disabled="isWakingUp"
+          class="refresh-btn wake-up-btn"
+          :class="{ 'server-warm': serverIsWarm && !needsWakeup }"
+          :title="serverIsWarm && !needsWakeup ? 'Servidor activo' : 'Despertar servidor (recomendado antes de obtener datos del SII)'"
+        >
+          {{ isWakingUp ? '🔄 Despertando servidor...' : (serverIsWarm && !needsWakeup) ? '✅ Servidor activo' : '☕ Despertar servidor' }}
+        </button>
+
         <button
           @click="fetchSiiData"
           :disabled="siiStore.loading || formsStore.loading"
@@ -595,10 +671,17 @@ const exportToExcel = () => {
           </div>
           <span class="progress-text">Procesando solicitud...</span>
         </div>
+        <div class="server-status" v-if="needsWakeup">
+          <div class="status-indicator warming">
+            <span class="status-dot"></span>
+            <span class="status-text">Despertando servidor...</span>
+          </div>
+        </div>
         <div class="loading-tips">
           <ul>
             <li>Se están descargando los documentos del período seleccionado</li>
             <li>No es necesario mantener esta ventana abierta</li>
+            <li v-if="needsWakeup">El servidor se está despertando automáticamente</li>
           </ul>
         </div>
       </div>
@@ -1145,6 +1228,53 @@ const exportToExcel = () => {
   background: #c0392b;
 }
 
+.wake-up-btn {
+  background: #ff9500;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.wake-up-btn:hover {
+  background: #e6851a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 149, 0, 0.3);
+}
+
+.wake-up-btn.server-warm {
+  background: #28a745;
+  border: 2px solid #20c997;
+}
+
+.wake-up-btn.server-warm:hover {
+  background: #218838;
+  border-color: #17a2b8;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.wake-up-btn:disabled {
+  background: #f39c12;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.wake-up-btn:disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
 .secondary-btn {
   background: #6c757d;
 }
@@ -1342,6 +1472,41 @@ const exportToExcel = () => {
     opacity: 1;
     transform: translateY(-50%) scale(1.2);
   }
+}
+
+/* Server status indicator */
+.server-status {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff9500;
+  animation: pulse 1.5s infinite;
+}
+
+.status-indicator.warming .status-dot {
+  background: #ff9500;
+}
+
+.status-text {
+  font-size: 0.9rem;
+  color: #856404;
+  font-weight: 500;
 }
 
 /* Mobile responsive for loading overlay */
