@@ -306,7 +306,7 @@ const wakeUpServer = async (showFeedback = true) => {
     isWakingUp.value = true;
 
     // Make a health check request to wake up the server
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    const baseURL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
     const response = await fetch(`${baseURL}/api/scheduler/health`, {
       method: 'GET',
       headers: {
