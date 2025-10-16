@@ -86,6 +86,7 @@ export interface OtrosImpuestos {
 
 export interface Notas {
   notaId: number;
+  detalleId: number;
   folio: string;
   comentario?: string;
   contabilizado: boolean;
