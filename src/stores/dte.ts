@@ -40,7 +40,7 @@ export const useFormsStore = defineStore('forms', () => {
 
     try {
       // For now, we'll use a default empresa RUT and try to get data from the new backend
-      const rutEmpresa = '77147627-9'
+      const rutEmpresa = '65.145.564-2'
       const anio = actualYear
       const mes = actualMonth
 
