@@ -80,6 +80,9 @@ const formatDate = (dateString: string) => {
 // Load data on component mount
 onMounted(async () => {
   try {
+    // Check if server is already warm on initial load
+    await wakeUpServer(false); // Silent check, no user feedback
+
     // Try to load some reference data first
     await Promise.allSettled([
       formsStore.loadTiposDte(),

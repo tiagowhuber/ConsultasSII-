@@ -135,6 +135,7 @@ export const useNotasStore = defineStore('notas', () => {
         // Create local representation if it doesn't exist
         const newNota: Notas = {
           notaId: 0, // Will be updated when we fetch from server
+          detalleId: 0, // Will be updated when we fetch from server
           folio,
           comentario,
           contabilizado: false,
@@ -178,6 +179,7 @@ export const useNotasStore = defineStore('notas', () => {
         // Create local representation if it doesn't exist
         const newNota: Notas = {
           notaId: 0, // Will be updated when we fetch from server
+          detalleId: 0, // Will be updated when we fetch from server
           folio,
           comentario: undefined,
           contabilizado,
@@ -221,6 +223,7 @@ export const useNotasStore = defineStore('notas', () => {
         // Create local representation if it doesn't exist
         const newNota: Notas = {
           notaId: 0, // Will be updated when we fetch from server
+          detalleId: 0, // Will be updated when we fetch from server
           folio,
           comentario: undefined,
           contabilizado: false,
