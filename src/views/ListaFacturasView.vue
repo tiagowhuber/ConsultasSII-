@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue';
+import { onMounted, computed, ref, onUnmounted } from 'vue';
 import { useFormsStore } from '@/stores/dte';
 import { useNotasStore } from '@/stores/notas';
 import { useSiiStore } from '@/stores/sii';
 import NotificationBell from '@/components/NotificationBell.vue';
 import type { DetalleCompra, ResumenCompra } from '@/types/api';
 import * as XLSX from 'xlsx';
+import { siiApi } from '@/services/api';
 
 const formsStore = useFormsStore();
 const notasStore = useNotasStore();
@@ -64,6 +65,10 @@ const serverIsWarm = ref(false);
 const lastWakeupTime = ref<Date | null>(null);
 const showWakeupButton = ref(false);
 
+// API call counter state
+const apiCallCount = ref<number | null>(null);
+const lastCalledAt = ref<string | null>(null);
+
 // Format currency
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('es-CL', {
@@ -77,6 +82,27 @@ const formatCurrency = (amount: number) => {
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('es-CL');
 };
+
+// Fetch API call counter
+const fetchCallCount = async () => {
+  try {
+    const response = await siiApi.getCallCount();
+    console.log('API call count fetched:', response.data);
+    apiCallCount.value = response.data.fetchSIIDataCount;
+    if (response.data.allCounters.length > 0) {
+      const fetchCounter = response.data.allCounters.find(c => c.functionName === 'fetchSIIData');
+      if (fetchCounter) {
+        lastCalledAt.value = fetchCounter.lastCalledAt;
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching call count:', error);
+    // Don't set to null, keep last known value
+  }
+};
+
+// Auto-refresh counter every 30 seconds
+let counterInterval: number | null = null;
 
 // Load data on component mount
 onMounted(async () => {
@@ -99,8 +125,23 @@ onMounted(async () => {
 
     // Load main data using current month and year from store
     await formsStore.refreshWithCurrentDate();
+
+    // Fetch initial call count
+    await fetchCallCount();
+
+    // Set up auto-refresh for call count
+    counterInterval = window.setInterval(() => {
+      fetchCallCount();
+    }, 30000); // Refresh every 30 seconds
   } catch (error) {
     console.error('Error loading data:', error);
+  }
+});
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (counterInterval !== null) {
+    clearInterval(counterInterval);
   }
 });// Computed properties
 const caratula = computed(() => formsStore.data?.caratula);
@@ -362,6 +403,9 @@ const fetchSiiData = async () => {
 
     // After successful SII fetch, refresh the local data
     await refreshData();
+
+    // Refresh the call counter after successful fetch
+    await fetchCallCount();
   } catch (error) {
     console.error('Error fetching SII data:', error);
     // Error is already handled in the store
@@ -655,6 +699,12 @@ const exportToExcel = () => {
         >
           {{ siiStore.loading ? '🔄 Obteniendo datos del SII... (puede tomar 30s)' : formsStore.loading ? 'Cargando...' : '📥 Obtener datos del SII' }}
         </button>
+
+        <!-- API Call Counter (minimalistic) -->
+        <div v-if="apiCallCount !== null" class="api-counter" title="Llamadas realizadas a la API del SII este mes">
+          <span class="counter-text">{{ apiCallCount }}/100</span>
+        </div>
+
         <!-- <button
           @click="refreshData"
           :disabled="formsStore.loading"
@@ -1168,6 +1218,31 @@ const exportToExcel = () => {
   align-items: center;
   gap: 1.5rem;
   flex-wrap: wrap;
+}
+
+/* API Call Counter Styles - Minimalistic */
+.api-counter {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: help;
+}
+
+.api-counter:hover {
+  border-color: #3498db;
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.2);
+}
+
+.counter-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  letter-spacing: 0.3px;
 }
 
 .date-selectors {

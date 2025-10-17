@@ -136,6 +136,21 @@ export const siiApi = {
   // Fetch and store SII data
   fetchAndStore: (year: string, month: string) =>
     api.post(`/api/sii/fetch-and-store/${year}/${month}`),
+
+  // Get API call counter
+  getCallCount: () =>
+    api.get<{
+      message: string;
+      fetchSIIDataCount: number;
+      allCounters: Array<{
+        functionName: string;
+        callCount: number;
+        lastCalledAt: string;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+      timestamp: string;
+    }>('/api/sii/call-count'),
 };
 
 export default api;
