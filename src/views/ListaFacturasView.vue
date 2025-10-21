@@ -40,16 +40,15 @@ const columnVisibility = ref({
   rutProveedor: true,
   razonSocial: true,
   folio: true,
-  fechaEmision: true,
+  fechaEmision: false,
   fechaRecepcion: true,
-  montoNeto: true,// Hidden by default
-  montoIva: true, // Hidden by default
+  montoNeto: false,
+  montoIva: false,
   montoTotal: true,
-  estado: true,
+  estado: false,
   contabilizado: true,
   pagado: true,
-  comentario: true,
-  descargar: false
+  comentario: true
 });
 
 // Comment editing state
@@ -237,8 +236,14 @@ const detalleCompras = computed((): DetalleCompra[] => filteredDetalleCompras.va
 // Get unique values for filter dropdowns
 const uniqueTiposDte = computed(() => {
   const compras = formsStore.data?.compras.detalleCompras || [];
-  const tipos = [...new Set(compras.map(c => ({ value: c.tipoDTE.toString(), label: c.tipoDTEString })))];
-  return tipos.sort((a, b) => parseInt(a.value) - parseInt(b.value));
+  const uniqueValues = new Map();
+  compras.forEach(c => {
+    const key = c.tipoDTE.toString();
+    if (!uniqueValues.has(key)) {
+      uniqueValues.set(key, { value: key, label: c.tipoDTEString });
+    }
+  });
+  return Array.from(uniqueValues.values()).sort((a, b) => parseInt(a.value) - parseInt(b.value));
 });
 
 const uniqueEstados = computed(() => {
@@ -276,16 +281,15 @@ const resetColumns = () => {
     rutProveedor: true,
     razonSocial: true,
     folio: true,
-    fechaEmision: true,
+    fechaEmision: false,
     fechaRecepcion: true,
-    montoNeto: true,
-    montoIva: true,
+    montoNeto: false,
+    montoIva: false,
     montoTotal: true,
-    estado: true,
+    estado: false,
     contabilizado: true,
     pagado: true,
-    comentario: true,
-    descargar: false
+    comentario: true
   };
 };
 
@@ -295,16 +299,15 @@ const showEssentialColumns = () => {
     rutProveedor: false,
     razonSocial: true,
     folio: true,
-    fechaEmision: true,
+    fechaEmision: false,
     fechaRecepcion: true,
     montoNeto: false,
     montoIva: false,
     montoTotal: true,
-    estado: true,
-    contabilizado: true,
-    pagado: true,
-    comentario: false,
-    descargar: false
+    estado: false,
+    contabilizado: false,
+    pagado: false,
+    comentario: false
   };
 };
 
@@ -471,21 +474,6 @@ const scrollTableToStart = () => {
 const scrollTableToEnd = () => {
   if (!tableContainer.value) return;
   tableContainer.value.scrollTo({ left: tableContainer.value.scrollWidth, behavior: 'smooth' });
-};
-
-// Download function to open SII document link
-const downloadDocument = (compra: DetalleCompra) => {
-  // Build SII URL with document parameters for future enhancement
-  const siiUrl = 'https://www1.sii.cl/cgi-bin/Portal001/mipeGesDocEmi.cgi?';
-
-  // Log the document details for debugging (can be removed in production)
-  console.log('Downloading document for:', {
-    rut: compra.rutProveedor,
-    folio: compra.folio,
-    tipo: compra.tipoDTE
-  });
-
-  window.open(siiUrl, '_blank');
 };
 
 // Comment editing functions
@@ -946,10 +934,6 @@ const exportToExcel = () => {
               <input type="checkbox" v-model="columnVisibility.comentario" />
               <span>Comentario</span>
             </label>
-            <label class="column-toggle">
-              <input type="checkbox" v-model="columnVisibility.descargar" />
-              <span>Descargar</span>
-            </label>
           </div>
         </div>
 
@@ -1100,7 +1084,6 @@ const exportToExcel = () => {
                 <th v-if="columnVisibility.contabilizado">Contabilizado</th>
                 <th v-if="columnVisibility.pagado">Pagado</th>
                 <th v-if="columnVisibility.comentario">Comentario</th>
-                <th v-if="columnVisibility.descargar">Descargar</th>
               </tr>
             </thead>
             <tbody>
@@ -1162,19 +1145,6 @@ const exportToExcel = () => {
                       {{ compra.comentario || 'Click para agregar comentario' }}
                     </div>
                   </div>
-                </td>
-                <td v-if="columnVisibility.descargar">
-                  <button
-                    @click="downloadDocument(compra)"
-                    class="download-btn"
-                    title="Descargar documento desde SII"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7,10 12,15 17,10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                  </button>
                 </td>
               </tr>
             </tbody>
@@ -2220,14 +2190,6 @@ const exportToExcel = () => {
   max-width: 300px;
 }
 
-.compras-table th:nth-child(13),
-.compras-table td:nth-child(13) { /* Descargar */
-  width: 60px;
-  min-width: 50px;
-  text-align: center;
-  padding: 0.5rem 0.25rem;
-}
-
 .razon-social {
   max-width: 250px !important;
   overflow: hidden !important;
@@ -2265,38 +2227,6 @@ const exportToExcel = () => {
 .estado-pendiente {
   background: #fff3cd;
   color: #856404;
-}
-
-.download-btn {
-  background: #28a745;
-  color: white;
-  border: none;
-  padding: 0.3rem;
-  border-radius: 4px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  width: 28px;
-  height: 28px;
-  margin: 0 auto;
-}
-
-.download-btn:hover {
-  background: #218838;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.download-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.download-btn svg {
-  width: 14px;
-  height: 14px;
 }
 
 /* Comment styles */
@@ -2573,17 +2503,6 @@ h2 {
   .compras-table td:nth-child(8) { /* Monto Total */
     width: 90px;
     min-width: 80px;
-  }
-
-  .download-btn {
-    padding: 0.2rem;
-    min-width: 24px;
-    height: 24px;
-  }
-
-  .download-btn svg {
-    width: 12px;
-    height: 12px;
   }
 
   .estado-badge {
