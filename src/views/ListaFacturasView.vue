@@ -702,7 +702,7 @@ const exportToExcel = () => {
 
         <!-- API Call Counter (minimalistic) -->
         <div v-if="apiCallCount !== null" class="api-counter" title="Llamadas realizadas a la API del SII este mes">
-          <span class="counter-text">{{ apiCallCount }}/100</span>
+          <span class="counter-text">{{ apiCallCount }}/30</span>
         </div>
 
         <!-- <button
