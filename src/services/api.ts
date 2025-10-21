@@ -59,6 +59,10 @@ export const dteApi = {
     limit?: number;
   }) => {
     const params = new URLSearchParams();
+    // Set a high default limit to get all records
+    if (!filters?.limit) {
+      params.append('limit', '10000');
+    }
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined) {
