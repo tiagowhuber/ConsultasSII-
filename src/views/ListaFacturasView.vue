@@ -749,7 +749,15 @@ const exportToExcel = () => {
     <!-- Error State -->
     <div v-else-if="formsStore.error" class="error">
       <p>Error: {{ formsStore.error }}</p>
-      <button @click="refreshData" class="retry-btn">Reintentar</button>
+      <button
+        v-if="formsStore.error && formsStore.error.includes('No se encontraron períodos')"
+        @click="fetchSiiData"
+        :disabled="siiStore.loading || formsStore.loading"
+        class="refresh-btn sii-fetch-btn"
+      >
+        {{ siiStore.loading ? '🔄 Obteniendo datos del SII... (puede tomar 30s)' : formsStore.loading ? 'Cargando...' : '📥 Obtener datos del SII' }}
+      </button>
+      <button v-else @click="refreshData" class="retry-btn">Reintentar</button>
     </div>
 
     <!-- Data Display -->
