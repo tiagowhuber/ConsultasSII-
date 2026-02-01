@@ -139,7 +139,7 @@ export const notasApi = {
 export const siiApi = {
   // Fetch and store SII data
   fetchAndStore: (year: string, month: string) =>
-    api.post(`/api/sii/fetch-and-store/${year}/${month}`),
+    api.post(`/api/sii/fetch-and-store-manual/${year}/${month}`),
 
   // Get API call counter
   getCallCount: () =>
