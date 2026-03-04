@@ -93,6 +93,16 @@ export const dteApi = {
 
   // Tipo DTE endpoints
   getAllTiposDte: () => api.get<TipoDte[]>('/api/dte/tipos-dte'),
+
+  // Official PDF generation via SimpleAPI (requires .pfx certificate on server)
+  downloadOfficialPdf: (params: {
+    folio: number;
+    tipoDte: number;
+    fechaEmision: string;
+    montoTotal: number;
+    rutEmisor: string;
+    rutReceptor: string;
+  }) => api.post('/api/dte/pdf-oficial', params, { responseType: 'blob' }),
 };
 
 // Notas API methods

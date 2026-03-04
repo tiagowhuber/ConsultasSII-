@@ -6,7 +6,8 @@ import { useSiiStore } from '@/stores/sii';
 import NotificationBell from '@/components/NotificationBell.vue';
 import type { DetalleCompra, ResumenCompra } from '@/types/api';
 import * as XLSX from 'xlsx';
-import { siiApi } from '@/services/api';
+import { siiApi, dteApi } from '@/services/api';
+import { generateDtePdf } from '@/utils/dtePdfGenerator';
 
 const FORMAS_PAGO = [
   'CAJA CHICA',
@@ -71,6 +72,39 @@ const editingCommentText = ref('');
 
 // Table scroll state
 const tableContainer = ref<HTMLElement | null>(null);
+
+// PDF download
+const pdfLoadingFolio = ref<number | null>(null);
+
+const downloadPdf = async (compra: DetalleCompra) => {
+  const empresa = formsStore.selectedEmpresa;
+  pdfLoadingFolio.value = compra.folio;
+  try {
+    const response = await dteApi.downloadOfficialPdf({
+      folio: compra.folio,
+      tipoDte: compra.tipoDTE,
+      fechaEmision: compra.fechaEmision,
+      montoTotal: compra.montoTotal,
+      rutEmisor: compra.rutProveedor,
+      rutReceptor: empresa?.rutEmpresa ?? '',
+    });
+    const blob = new Blob([response.data as BlobPart], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DTE_${compra.tipoDTE}_${compra.rutProveedor}_${compra.folio}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    // Fallback: generate PDF client-side with jsPDF
+    generateDtePdf(compra, {
+      rutEmpresa: empresa?.rutEmpresa ?? '',
+      nombreEmpresa: empresa?.razonSocial ?? undefined,
+    });
+  } finally {
+    pdfLoadingFolio.value = null;
+  }
+};
 
 // Server wake-up state
 const isWakingUp = ref(false);
@@ -1133,6 +1167,7 @@ const exportToExcel = () => {
                 <th v-if="columnVisibility.pagado">Pagado</th>
                 <th v-if="columnVisibility.formaPago">Forma de Pago</th>
                 <th v-if="columnVisibility.comentario">Comentario</th>
+                <th class="pdf-col-header">PDF</th>
               </tr>
             </thead>
             <tbody>
@@ -1204,6 +1239,17 @@ const exportToExcel = () => {
                       {{ compra.comentario || 'Click para agregar comentario' }}
                     </div>
                   </div>
+                </td>
+                <td class="pdf-col-cell">
+                  <button
+                    @click="downloadPdf(compra)"
+                    class="pdf-btn"
+                    :class="{ 'pdf-btn--loading': pdfLoadingFolio === compra.folio }"
+                    :disabled="pdfLoadingFolio === compra.folio"
+                    :title="pdfLoadingFolio === compra.folio ? 'Generando PDF…' : 'Descargar PDF'"
+                  >
+                    {{ pdfLoadingFolio === compra.folio ? '⏳' : '📄' }}
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -1893,6 +1939,47 @@ const exportToExcel = () => {
 .excel-export-btn:active {
   transform: translateY(0);
   box-shadow: 0 1px 4px rgba(40, 167, 69, 0.3);
+}
+
+.pdf-col-header {
+  width: 2.5rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pdf-col-cell {
+  text-align: center;
+  padding: 0.2rem;
+}
+
+.pdf-btn {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 0.2rem 0.4rem;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.pdf-btn:hover {
+  background: #e8f0fe;
+  border-color: #003366;
+  box-shadow: 0 1px 4px rgba(0, 51, 102, 0.2);
+}
+
+.pdf-btn:active {
+  background: #c7d9f5;
+}
+
+.pdf-btn--loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.pdf-btn:disabled {
+  cursor: wait;
 }
 
 .column-toggle-btn, .filter-toggle-btn {
