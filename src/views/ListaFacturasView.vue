@@ -8,6 +8,19 @@ import type { DetalleCompra, ResumenCompra } from '@/types/api';
 import * as XLSX from 'xlsx';
 import { siiApi } from '@/services/api';
 
+const FORMAS_PAGO = [
+  'CAJA CHICA',
+  'DEBITO',
+  'TRANSFERENCIA',
+  'CHEQUE',
+  'FONDO POR RENDIR',
+  'PAC Y CARGO BANCO',
+  'ANULA',
+  'REBAJA',
+  'OTRO',
+  'NO CORRESPONDE'
+] as const;
+
 const formsStore = useFormsStore();
 const notasStore = useNotasStore();
 const siiStore = useSiiStore();
@@ -48,6 +61,7 @@ const columnVisibility = ref({
   estado: false,
   contabilizado: true,
   pagado: true,
+  formaPago: true,
   comentario: true
 });
 
@@ -166,6 +180,7 @@ const filteredDetalleCompras = computed((): DetalleCompra[] => {
         formatCurrency(compra.montoIvaRecuperable),
         formatCurrency(compra.montoTotal),
         compra.estado,
+        compra.formaPago || '',
         compra.comentario || ''
       ].join(' ').toLowerCase();
 
@@ -289,6 +304,7 @@ const resetColumns = () => {
     estado: false,
     contabilizado: true,
     pagado: true,
+    formaPago: true,
     comentario: true
   };
 };
@@ -307,6 +323,7 @@ const showEssentialColumns = () => {
     estado: false,
     contabilizado: false,
     pagado: false,
+    formaPago: false,
     comentario: false
   };
 };
@@ -510,6 +527,23 @@ const toggleContabilizado = async (compra: DetalleCompra) => {
   }
 };
 
+// Update forma de pago
+const updateFormaPago = async (compra: DetalleCompra, event: Event) => {
+  try {
+    const select = event.target as HTMLSelectElement;
+    const newFormaPago = select.value || null;
+
+    await notasStore.updateFormaPago(
+      compra.folio.toString(),
+      newFormaPago
+    );
+
+    compra.formaPago = newFormaPago;
+  } catch (error) {
+    console.error('Error updating forma de pago:', error);
+  }
+};
+
 // Toggle pagado status
 const togglePagado = async (compra: DetalleCompra) => {
   try {
@@ -576,6 +610,7 @@ const exportToExcel = () => {
       'Estado': compra.estado,
       'Contabilizado': compra.contabilizado ? 'Sí' : 'No',
       'Pagado': compra.pagado ? 'Sí' : 'No',
+      'Forma de Pago': compra.formaPago || '',
       'Comentario': compra.comentario || ''
     }));
 
@@ -597,6 +632,7 @@ const exportToExcel = () => {
       { width: 12 }, // Estado
       { width: 12 }, // Contabilizado
       { width: 10 }, // Pagado
+      { width: 20 }, // Forma de Pago
       { width: 30 }  // Comentario
     ];
     ws['!cols'] = colWidths;
@@ -939,6 +975,10 @@ const exportToExcel = () => {
               <span>Pagado</span>
             </label>
             <label class="column-toggle">
+              <input type="checkbox" v-model="columnVisibility.formaPago" />
+              <span>Forma de Pago</span>
+            </label>
+            <label class="column-toggle">
               <input type="checkbox" v-model="columnVisibility.comentario" />
               <span>Comentario</span>
             </label>
@@ -1091,6 +1131,7 @@ const exportToExcel = () => {
                 </th>
                 <th v-if="columnVisibility.contabilizado">Contabilizado</th>
                 <th v-if="columnVisibility.pagado">Pagado</th>
+                <th v-if="columnVisibility.formaPago">Forma de Pago</th>
                 <th v-if="columnVisibility.comentario">Comentario</th>
               </tr>
             </thead>
@@ -1131,6 +1172,16 @@ const exportToExcel = () => {
                     />
                     <span class="checkmark"></span>
                   </label>
+                </td>
+                <td v-if="columnVisibility.formaPago" class="forma-pago-cell">
+                  <select
+                    :value="compra.formaPago || ''"
+                    @change="updateFormaPago(compra, $event)"
+                    class="forma-pago-select"
+                  >
+                    <option value="">-- Seleccionar --</option>
+                    <option v-for="forma in FORMAS_PAGO" :key="forma" :value="forma">{{ forma }}</option>
+                  </select>
                 </td>
                 <td v-if="columnVisibility.comentario" class="comment-cell">
                   <div class="comment-wrapper">
@@ -2254,6 +2305,38 @@ const exportToExcel = () => {
   text-align: center;
   padding: 0.5rem 0.25rem;
 }
+
+.forma-pago-cell {
+  padding: 0.25rem 0.5rem;
+  min-width: 160px;
+}
+
+.forma-pago-select {
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #333;
+  transition: border-color 0.2s ease;
+}
+
+.forma-pago-select:hover {
+  border-color: #3498db;
+}
+
+.forma-pago-select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.forma-pago-select option[value=""] {
+  color: #999;
+}
+
 
 .checkbox-wrapper {
   display: inline-flex;

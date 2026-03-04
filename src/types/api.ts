@@ -91,6 +91,7 @@ export interface Notas {
   comentario?: string;
   contabilizado: boolean;
   pagado: boolean;
+  formaPago?: string | null;
   createdAt: string;
   updatedAt: string;
   detalleCompra?: DetalleCompras;
@@ -137,6 +138,7 @@ export interface DetalleCompra {
   otrosImpuestos?: OtroImpuesto[];
   contabilizado?: boolean;
   pagado?: boolean;
+  formaPago?: string | null;
 }
 
 export interface ResumenCompra {

@@ -251,6 +251,49 @@ export const useNotasStore = defineStore('notas', () => {
     }
   }
 
+  // Update forma de pago
+  const updateFormaPago = async (folio: string, formaPago: string | null): Promise<Notas | null> => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await notasApi.updateNotaFormaPago(folio, formaPago)
+
+      // Update local state
+      const nota = getNotaByFolio(folio)
+      if (nota) {
+        nota.formaPago = formaPago
+        nota.updatedAt = new Date().toISOString()
+      } else {
+        const newNota: Notas = {
+          notaId: 0,
+          detalleId: 0,
+          folio,
+          comentario: undefined,
+          contabilizado: false,
+          pagado: false,
+          formaPago,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        notas.value.push(newNota)
+
+        try {
+          await loadNotaByFolio(folio)
+        } catch {
+          // If it fails, the local representation is fine for now
+        }
+      }
+
+      return response.data
+    } catch (err: unknown) {
+      console.error('Error updating forma de pago:', err)
+      error.value = (err as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message || 'Error updating forma de pago'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Delete nota
   const deleteNota = async (folio: string): Promise<boolean> => {
     loading.value = true
@@ -300,6 +343,7 @@ export const useNotasStore = defineStore('notas', () => {
     updateComment,
     updateContabilizado,
     updatePagado,
+    updateFormaPago,
     deleteNota,
     clearNotas
   }

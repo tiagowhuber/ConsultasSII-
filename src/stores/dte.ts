@@ -260,6 +260,7 @@ export const useFormsStore = defineStore('forms', () => {
       comentario: detalle.nota?.comentario || undefined,
       contabilizado: detalle.nota?.contabilizado || false,
       pagado: detalle.nota?.pagado || false,
+      formaPago: detalle.nota?.formaPago || null,
       estado: detalle.estado,
       fechaAcuse: detalle.fechaAcuse || null,
       otrosImpuestos: detalle.otrosImpuestos?.map(oi => ({
