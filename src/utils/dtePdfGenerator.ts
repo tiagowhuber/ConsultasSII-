@@ -180,20 +180,6 @@ export function generateDtePdf(dte: DetalleCompra, empresa: EmpresaInfo): void {
 
   y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6
 
-  // ─── Items notice ─────────────────────────────────────────────────────────
-  doc.setFillColor(255, 248, 220) // warm yellow-ish
-  doc.setDrawColor(200, 170, 80)
-  doc.roundedRect(MARGIN, y, CONTENT_W, 9, 2, 2, 'FD')
-  doc.setFontSize(7.5)
-  doc.setFont('helvetica', 'italic')
-  doc.setTextColor(100, 80, 0)
-  doc.text(
-    'ℹ  Detalle de líneas de ítems no disponible — la base de datos almacena únicamente totales del documento.',
-    MARGIN + 4,
-    y + 5.5
-  )
-
-  y += 14
 
   // ─── Amounts table ────────────────────────────────────────────────────────
   type AmountRow = [string, string]
